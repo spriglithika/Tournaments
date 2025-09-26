@@ -47,9 +47,7 @@ class Tournament(torch.nn.Module):
         out = 1 - torch.linalg.norm(cevians,axis=-1)
         return out #, means
 
-def symmetric_cross_entropy(preds, targets, do_softmax=True):
-    if do_softmax:
-        preds = preds.softmax(dim=-1)
+def symmetric_cross_entropy(preds, targets):
     return -(targets * preds.log() + (1 - targets) * (1 - preds).log()).mean()
 
 def main():
