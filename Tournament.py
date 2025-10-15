@@ -1,4 +1,5 @@
 import torch
+from itertools import combinations
 class Tournament(torch.nn.Module):
     def __init__(self, num_classes):
         super(Tournament, self).__init__()
@@ -7,6 +8,22 @@ class Tournament(torch.nn.Module):
         self.num_edges = self.nSimplex(num_classes)
         self.cevians = self.selectionIndicies()
         self.crd, self.starts, self.vecs = self.coordinates()
+        self.gt,self.perms = self.get_gt()
+
+    def get_gt(self):
+        # first we need all permutations of two class labels
+        perms = torch.tensor(list(combinations(range(self.num_classes), 2)), dtype=torch.float32)
+        # now we create a tensor to hold the ground truth values
+        gt = torch.zeros((self.num_classes, self.num_edges), dtype=torch.float32)
+        for j in range(self.num_classes):
+            for i, (a, b) in enumerate(perms):
+                if a == j:
+                    gt[j, i] = 1.0
+                elif b == j:
+                    gt[j, i] = -1.0
+                else:
+                    gt[j, i] = 0.0
+        return gt, perms
 
     def nSimplex(self,n):
         num_edges = torch.arange(n).sum().item()
@@ -23,7 +40,7 @@ class Tournament(torch.nn.Module):
         corners = corners[mask,:].reshape(self.num_classes,-1,self.num_classes)
         edge_index = torch.nonzero(torch.abs((1-corners))) [:, -1].reshape(-1,2)
         cevians = torch.eye(self.num_classes**2)[edge_index[:,0]*self.num_classes+edge_index[:,1]].reshape((self.num_classes,self.euc_dim,self.num_classes**2))[:,:,l].reshape(self.num_classes, self.euc_dim, self.num_edges)
-        return torch.tensor(cevians.sum(1))
+        return cevians.sum(1)
 
     def coordinates(self):
         n =self.euc_dim
@@ -33,7 +50,7 @@ class Tournament(torch.nn.Module):
         extra = torch.unsqueeze((torch.ones(n)/((2*(n+1))**.5)),0)
         crd = torch.cat((es-base,extra),0)
         thing = torch.triu(torch.ones((self.num_classes,self.num_classes)),1)
-        idx = torch.tensor(thing.nonzero())
+        idx = thing.nonzero()
         starts = crd[idx[:, 0]]
         ends = crd[idx[:, 1]]
         vecs = ends - starts
@@ -42,19 +59,28 @@ class Tournament(torch.nn.Module):
     def forward(self, x):
         assert x.shape[-1] == self.num_edges, f"Input last dimension must be {self.num_edges}, got {x.shape[-1]}"
         chis = self.starts[None, :, :] + x[..., None] * self.vecs[None, :, :]
-        means = self.cevians @ chis / (self.num_classes - 1)
+        means = self.cevians @ chis / (self.euc_dim)
         cevians = self.crd - means
         out = 1 - torch.linalg.norm(cevians,axis=-1)
         return out #, means
 
-def symmetric_cross_entropy(preds, targets):
-    return -(targets * preds.log() + (1 - targets) * (1 - preds).log()).mean()
+def symmetric_cross_entropy(preds, targets, reduction='mean'):
+    safe_preds, safe_targets = preds.clamp(1e-7, 1 - 1e-7), targets.clamp(1e-7, 1 - 1e-7)
+    loss = -(safe_targets * safe_preds.log() + (1 - safe_targets) * (1 - safe_preds).log())
+    if reduction == 'mean':
+        return loss.mean()
+    elif reduction == 'sum':
+        return loss.sum()
+    else:
+        return loss
 
 def main():
-    t = Tournament(4)
-    x = torch.rand((10,t.num_edges))
-    y = t(x)
-    print(y)
+    t = Tournament(10)
+    # x = torch.rand((10,t.num_edges))
+    # y = t(x)
+    # print(y)
+    print(t.gt)
+    print(t.gt.shape)
 
 if __name__ == "__main__":
     main()
