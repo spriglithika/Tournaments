@@ -6,9 +6,15 @@ class Tournament(torch.nn.Module):
         self.num_classes = num_classes
         self.euc_dim = num_classes - 1
         self.num_edges = self.nSimplex(num_classes)
-        self.cevians = self.selectionIndicies()
-        self.crd, self.starts, self.vecs = self.coordinates()
-        self.gt,self.perms = self.get_gt()
+        # register tensors that are not learnable so they move with .to(device)
+        self.register_buffer('cevians', self.selectionIndicies())
+        crd, starts, vecs = self.coordinates()
+        self.register_buffer('crd', crd)
+        self.register_buffer('starts', starts)
+        self.register_buffer('vecs', vecs)
+        gt, perms = self.get_gt()
+        self.register_buffer('gt', gt)
+        self.register_buffer('perms', perms)
 
     def get_gt(self):
         # first we need all permutations of two class labels
