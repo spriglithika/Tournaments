@@ -2,16 +2,14 @@ from preamble import *
 import Tournament
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from Models import BaseModel, MidModel, TournamentModel
+from Models import BaseModel, MidModel, TournamentModel, copy_matching_parameters
 from Training_testing import joint_train_all, joint_eval_all, ConvergenceMonitor
 from argparse import ArgumentParser
 
 sce = Tournament.symmetric_cross_entropy
 Tournament = Tournament.Tournament
-nn = torch.nn
-F = nn.functional
 
-print("ResNet18ExpCasted: Modules loaded")
+print("MobileNetExpCasted: Modules loaded")
 
 def main(num_epochs, path_mod):
     train_dataset = datasets.CIFAR100('../data', train=True, download=True,
@@ -32,7 +30,7 @@ def main(num_epochs, path_mod):
                                 ]))
 
     # Use pinned memory to allow async host->device transfers
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True)
     test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False, pin_memory=True)
     class_count = torch.max(torch.tensor(test_dataset.targets)) + 1
@@ -41,20 +39,24 @@ def main(num_epochs, path_mod):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     base_model = BaseModel(class_count, device = device, backbone='resnet18').to(device)
     mid_model = MidModel(class_count, device = device, backbone='resnet18').to(device)
+    copy_matching_parameters(base_model, mid_model)
     tournament_model = TournamentModel(class_count, device = device, backbone='resnet18').to(device)
-    optimizer_base = torch.optim.AdamW(base_model.parameters(), lr=0.001)
-    optimizer_mid = torch.optim.AdamW(mid_model.parameters(), lr=0.001)
-    optimizer_tournament = torch.optim.AdamW(tournament_model.parameters(), lr=0.001)
-    # optimizer_base = torch.optim.SGD(base_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    # optimizer_mid = torch.optim.SGD(mid_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    # optimizer_tournament = torch.optim.SGD(tournament_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-
+    copy_matching_parameters(base_model, tournament_model)
+    # optimizer_base = torch.optim.AdamW(base_model.parameters(), lr=0.01)
+    # optimizer_mid = torch.optim.AdamW(mid_model.parameters(), lr=0.01)
+    # optimizer_tournament = torch.optim.AdamW(tournament_model.parameters(), lr=0.01)
+    optimizer_base = torch.optim.SGD(base_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
+    optimizer_mid = torch.optim.SGD(mid_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
+    optimizer_tournament = torch.optim.SGD(tournament_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
+    sched_base = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_base, 200)
+    sched_mid = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_mid, 200)
+    sched_tournament = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_tournament, 200)
     # num_epochs = 10
 
     models = {
-        'base': (base_model, None, optimizer_base),
-        'mid': (mid_model, None, optimizer_mid),
-        'tournament': (tournament_model, None, optimizer_tournament)
+        'base': (base_model, None, optimizer_base, sched_base),
+        'mid': (mid_model, None, optimizer_mid, sched_mid),
+        'tournament': (tournament_model, None, optimizer_tournament, sched_tournament)
     }
 
     # prepare convergence monitor and ckpt directory
@@ -66,7 +68,7 @@ def main(num_epochs, path_mod):
     print("Starting joint training...")
     for epoch in range(num_epochs):
         print(f"Epoch {epoch}")
-        joint_train_all(device, train_loader, models, class_count)
+        joint_train_all(device, train_loader, models, class_count, temps = [1,1, 10])
         joint_eval_all(device, val_loader, models, class_count, monitor=monitor, epoch=epoch)
     # _path_mod = '' if path_mod == '' else f'_{path_mod}'
     # Loop to save the models after training
@@ -80,6 +82,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--path_mod", type=str, default="")
-
+    parser.add_argument("--seed", type=int, default=69)
     args = parser.parse_args()
+    fix_random_seeds(args.seed)
     main(args.epochs, args.path_mod)
