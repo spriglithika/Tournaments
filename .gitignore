@@ -1,5 +1,10 @@
 .vscode/settings.json
 .tnmt
-*.pyc
+*.cpython-311.pyc
 __pycache__/
 
+__pycache__/Models.cpython-311.pyc
+__pycache__/preamble.cpython-311.pyc
+__pycache__/Tournament.cpython-311.pyc
+__pycache__/TournamentThresholds.cpython-311.pyc
+__pycache__/Training_testing.cpython-311.pyc

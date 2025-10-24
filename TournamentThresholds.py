@@ -97,20 +97,20 @@ class SeparateConfidence(_BaseThreshold):
         left_idx = left.unsqueeze(0).expand(B, -1).to(x.device)
         right_idx = right.unsqueeze(0).expand(B, -1).to(x.device)
         # counts via scatter_add for efficiency
-        counts = torch.zeros((B, self.num_classes), dtype=torch.float32, device=x.device)
+        counts = torch.zeros((B, self.num_classes), dtype=x.dtype, device=x.device)
         # Build low/high confidences from single x input as original logic
         x_temp = x.clone()
         x_temp = x_temp - 0.5
         x_temp = x_temp * 2.0
-        x_low = torch.clamp(x_temp, max=0).abs()
-        x_high = torch.clamp(x_temp, min=0)
+        x_low = torch.clamp(x_temp, max=0.0).abs()
+        x_high = torch.clamp(x_temp, min=0.0)
         # left contributions (x_low shape (B,E), left_idx shape (B,E))
         counts.scatter_add_(1, left_idx, x_low)
         # right contributions
         counts.scatter_add_(1, right_idx, x_high)
-
-        preds = counts.argmax(dim=1)
-        return F.one_hot(preds, num_classes=self.num_classes)
+        return counts
+        # preds = counts.argmax(dim=1)  
+        # return F.one_hot(preds, num_classes=self.num_classes)
 
 
 class SingleConfidence(_BaseThreshold):
