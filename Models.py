@@ -187,8 +187,40 @@ class TournamentModel(torch.nn.Module):
         # if train:
             # x = F.softmax(x, dim=1)
         return x, mid
-
-
+class TournamentModelDropout(torch.nn.Module):
+    def __init__(self, class_count, backbone= 'resnet18', device = 'cpu', freeze_backbone=False, unfreeze_last_n=2):
+        super(TournamentModelDropout, self).__init__()
+        self.device = device
+        self.tournament = Tournament(num_classes=class_count)
+        model = ResNet18Backbone if backbone == 'resnet18' else MobileNetBackbone
+        self.model = model(device=device, output_dim=self.tournament.num_edges, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
+        self.batchnorm = nn.BatchNorm1d(self.tournament.num_edges)
+        # self.layers = [self.model, self.batchnorm, self.sigmoid]
+        # self.asigmoid = AffineSigmoid(self.tournament.num_edges)
+        # self.asigmoid = nn.Sigmoid()
+        self.tanh = nn.Tanh()
+        # self.dropout = nn.Dropout(.05)
+        self.dropout = nn.Dropout(.2)
+        # self.layers = [self.model, self.batchnorm, self.asigmoid]
+        self.layers = [self.model, self.batchnorm, self.tanh]
+        self.mms = MinMaxScaler()
+        # self.layers = [self.model, self.asigmoid]
+        self.middle = nn.Sequential(*self.layers)
+    def forward(self, x, train = False):
+        backboned = self.middle(x)
+        to_tourn = self.dropout(backboned)
+        mid = (backboned + 1) / 2 
+        to_tourn = (to_tourn + 1) / 2 
+        x = self.tournament(to_tourn)
+        # print(x.min(), x.max())
+        # x = (x-self.tournament.min_logit) / (1-self.tournament.min_logit)
+        # x = F.mish(x)
+        # x = self.mms(x)
+        # x = (x -.5 ) * 2
+        # x = x * .5
+        # if train:
+            # x = F.softmax(x, dim=1)
+        return x, mid
 def count_trainable_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 

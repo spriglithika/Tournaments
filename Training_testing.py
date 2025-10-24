@@ -85,7 +85,7 @@ class ConvergenceMonitor:
         return improved
 
 
-def joint_train_all(device, train_loader, models, class_count, temps = [1,1,1]):
+def joint_train_all(device, train_loader, models, class_count, temps = [1,1,1], lbda = 1.0):
     # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
     pbar = tqdm(train_loader)
     min_logit = models['tournament'][0].tournament.min_logit
@@ -115,7 +115,71 @@ def joint_train_all(device, train_loader, models, class_count, temps = [1,1,1]):
             # loss_tourn = sce(out_tourn, target)
             # loss_tourn = isce(out_tourn, tourn_target)
             # loss_tourn = F.mse_loss(out_tourn * target, target)
-            loss_tourn = F.cross_entropy(out_tourn * temps[2], target) - torch.mean((tourn_mid - 0.5).abs())
+            loss_tourn = F.cross_entropy(out_tourn * temps[2], target) - lbda * torch.mean((tourn_mid - 0.5).abs())
+
+        # scale the summed loss and backward once to keep AMP stable
+        total_loss = loss_base + loss_mid + loss_tourn
+        # scaler.scale(total_loss).backward(retain_graph=True)
+        scaler.scale(total_loss).backward()
+
+        # optional: unscale and clip gradients per-model to avoid explosion
+        # (unscale requires passing the optimizer whose params' grads should be unscaled)
+        for name, (m, s, opt, sch) in models.items():
+            # `s` entry is ignored now (kept for compatibility in the models dict)
+            try:
+                scaler.unscale_(opt)
+            except Exception:
+                pass
+            torch.nn.utils.clip_grad_norm_(m.parameters(), max_norm=1.0)
+
+        # step each optimizer (scaler.step handles skipped steps due to infs/nans)
+        for name, (m, s, opt, sch) in models.items():
+            scaler.step(opt)
+
+        # update scaler once per iteration
+        scaler.update()
+
+        pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_tourn': loss_tourn.item(), 'tourn_min': out_tourn.min().item(), 'tourn_max': out_tourn.max().item()})
+        # if batch_idx % 100 == 0:
+            # print()
+    models["base"][-1].step()
+    models["mid"][-1].step()
+    models["tournament"][-1].step()
+
+def joint_train_all_separate(device, train_loader, models, class_count, temps = [1,1,1], lbda = 1.0):
+    # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
+    pbar = tqdm(train_loader)
+    min_logit = models['tournament'][0].tournament.min_logit
+    separated_preds = SeparateConfidence(class_count)
+    # make sure all models are in training mode (joint_eval_all sets them to eval())
+    for name, (m, _s, opt, sch) in models.items():
+        m.train()
+    for batch_idx, (data, target) in enumerate(pbar):
+        data = data.to(device, non_blocking=True)
+        target = F.one_hot(target.to(device, non_blocking=True), num_classes=class_count).float()
+        tourn_min_logits = torch.ones_like(target) * min_logit
+        tourn_target = torch.where(target == 0, tourn_min_logits, target)
+
+        # zero grads for all optimizers
+        for _, (m, _s, opt, sch) in models.items():
+            opt.zero_grad()
+
+        # forward under autocast
+        with caster:
+            out_base = models['base'][0](data, train=True)
+            out_mid = models['mid'][0](data, train=True)
+            out_tourn, tourn_mid = models['tournament'][0](data, train=True)
+            sep_preds = separated_preds(tourn_mid)
+            # loss_base = lsce(out_base, target)
+            loss_base = F.cross_entropy(out_base * temps[0], target)
+            # loss_mid = lsce(out_mid, target)
+            loss_mid = F.cross_entropy(out_mid * temps[1], target)
+            # loss_tourn = sce(out_tourn, target)
+            # loss_tourn = isce(out_tourn, tourn_target)
+            # loss_tourn = F.mse_loss(out_tourn * target, target)
+            # loss_tourn = F.cross_entropy(out_tourn * temps[2], target) - lbda * torch.mean((tourn_mid - 0.5).abs())
+            # loss_tourn = F.cross_entropy(sep_preds * temps[2], target) - lbda * torch.mean((tourn_mid - 0.5).abs())
+            loss_tourn = F.cross_entropy(out_tourn * temps[2], target) + F.cross_entropy(sep_preds, target) - lbda * torch.mean((tourn_mid - 0.5).abs()) # trying all three out
 
         # scale the summed loss and backward once to keep AMP stable
         total_loss = loss_base + loss_mid + loss_tourn
@@ -291,7 +355,6 @@ def joint_eval_all(device, test_loader, models, class_count, monitor: 'Convergen
     single_acc = 100. * correct['tournament_single'] / len(test_loader.dataset)
     print(f"tournament_single {mode} set: Accuracy: {correct['tournament_single']}/{len(test_loader.dataset)} ({single_acc:.2f}%)")
 
-
 class TournamentMarginLoss(nn.Module):
     def __init__(self, edge_pairs, margin=0.2):
         """
@@ -330,7 +393,6 @@ class TournamentMarginLoss(nn.Module):
         triplet_losses = F.relu(self.margin - (pos_scores - neg_scores))
 
         return triplet_losses.mean()
-
 
 class TournamentTripletLoss(nn.Module):
     def __init__(self, margin=0.2):

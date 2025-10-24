@@ -68,7 +68,7 @@ def main(num_epochs, path_mod):
     print("Starting joint training...")
     for epoch in range(num_epochs):
         print(f"Epoch {epoch}")
-        joint_train_all(device, train_loader, models, class_count, temps = [1,1, 10])
+        joint_train_all(device, train_loader, models, class_count, temps = [1,1, 10], lbda = 2.0)
         joint_eval_all(device, val_loader, models, class_count, monitor=monitor, epoch=epoch)
     # _path_mod = '' if path_mod == '' else f'_{path_mod}'
     # Loop to save the models after training
