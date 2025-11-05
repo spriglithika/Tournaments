@@ -3,7 +3,7 @@ import Tournament
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
 from Models import BaseModel, MidModel, TournamentModelDropout, copy_matching_parameters
-from Training_testing import joint_train_all, joint_eval_all, ConvergenceMonitor
+from Training_testing import joint_train_all_mixup, joint_eval_all, ConvergenceMonitor
 from argparse import ArgumentParser
 TournamentModel = TournamentModelDropout
 sce = Tournament.symmetric_cross_entropy
@@ -17,7 +17,7 @@ def main(num_epochs, path_mod):
                                     transforms.RandomHorizontalFlip(),
                                     transforms.RandomCrop(32, padding=4),
                                     transforms.ToTensor(),
-                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
                                 ]))
     # need to make a random split for validation
     val_size = 5000
@@ -33,7 +33,7 @@ def main(num_epochs, path_mod):
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True)
     test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False, pin_memory=True)
-    class_count = torch.max(torch.tensor(test_dataset.targets)) + 1
+    class_count = (torch.max(torch.tensor(test_dataset.targets)) + 1).item()
     # image_shape = train_dataset[0][0].shape
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,7 +68,7 @@ def main(num_epochs, path_mod):
     print("Starting joint training...")
     for epoch in range(num_epochs):
         print(f"Epoch {epoch}")
-        joint_train_all(device, train_loader, models, class_count, temps = [1,1, 10], lbda = 1.0)
+        joint_train_all_mixup(device, train_loader, models, class_count, temps = [1,1, 5], lbda = 2.0)
         joint_eval_all(device, val_loader, models, class_count, monitor=monitor, epoch=epoch)
     # _path_mod = '' if path_mod == '' else f'_{path_mod}'
     # Loop to save the models after training

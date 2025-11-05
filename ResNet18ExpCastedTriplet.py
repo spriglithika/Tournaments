@@ -33,7 +33,7 @@ def main(num_epochs, path_mod):
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True)
     test_loader = DataLoader(test_dataset, batch_size=1000, shuffle=False, pin_memory=True)
-    class_count = torch.max(torch.tensor(test_dataset.targets)) + 1
+    class_count = (torch.max(torch.tensor(test_dataset.targets)) + 1).item()
     # image_shape = train_dataset[0][0].shape
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -132,6 +132,5 @@ class SingleConfidence(_BaseThreshold):
         # add low contributions (1 - confidence)
         counts.scatter_add_(1, left_idx, x)
 
-        preds = counts.argmax(dim=1)
-        return F.one_hot(preds, num_classes=self.num_classes)
-
+        return counts
+       
