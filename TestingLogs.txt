@@ -196,6 +196,7 @@
     tournament_center Val set: Accuracy: 9/10000 (0.09%)
     tournament_bern Val set: Accuracy: 12/10000 (0.12%)
     tournament_seperate Val set: Accuracy: 13/10000 (0.13%)
+    
 /mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/imagenet/mobilenet/full_train
     base Val set: Average loss: 0.8447, Accuracy: 2239/2850 (78.56%)
     mid Val set: Average loss: 0.7494, Accuracy: 2311/2850 (81.09%)

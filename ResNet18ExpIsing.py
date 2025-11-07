@@ -48,9 +48,9 @@ def main(num_epochs, path_mod):
     optimizer_base = torch.optim.SGD(base_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
     optimizer_mid = torch.optim.SGD(mid_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
     # optimizer_tournament = torch.optim.SGD(tournament_model.parameters(), lr=0.1, momentum=0.9, nesterov=True, weight_decay=5e-4)
-    sched_base = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_base, 200)
-    sched_mid = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_mid, 200)
-    sched_tournament = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_tournament, 200)
+    sched_base = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_base, num_epochs)
+    sched_mid = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_mid, num_epochs)
+    sched_tournament = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_tournament, num_epochs)
     # num_epochs = 10
 
     models = {

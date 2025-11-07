@@ -11,11 +11,12 @@ if float(torch.__version__.split(".")[0]+"."+torch.__version__.split(".")[1]) >=
     amp = torch.amp
     caster = torch.amp.autocast(enabled=torch.cuda.is_available(), device_type=device_type)
     amp_ctx = torch.amp.autocast(enabled=False, device_type=device_type) if torch.cuda.is_available() else contextlib.nullcontext()
+    scaler = torch.amp.GradScaler(enabled=torch.cuda.is_available())
 else:
     amp = torch.cuda.amp if torch.cuda.is_available() else torch.cpu.amp
     caster = torch.autocast(enabled=torch.cuda.is_available(), device_type=device_type)
     amp_ctx = torch.autocast(enabled=False, device_type=device_type) if torch.cuda.is_available() else contextlib.nullcontext()
-
+    scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
 # torch.set_default_dtype(torch.float32)
 
 def fix_random_seeds(seed=69):

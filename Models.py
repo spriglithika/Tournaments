@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import datasets, transforms, models
 from itertools import combinations
+import math
 
 from Tournament import Tournament, TournamentGaussianModel
 
@@ -139,13 +140,20 @@ class BaseModel(torch.nn.Module):
 class MidModel(torch.nn.Module):
     def __init__(self, class_count, backbone= 'resnet18', device = 'cpu', freeze_backbone=False, unfreeze_last_n=1):
         super(MidModel, self).__init__()
-        model = ResNet18Backbone if backbone == 'resnet18' else ResNet18BackboneExtended if backbone == 'resnet18ext' else MobileNetBackbone
         edge_count = int(class_count * (class_count - 1) * 0.5)
+        model = MobileNetBackbone
+        mid_features = math.ceil((1280 * edge_count)/(1280 + class_count))
+        if backbone == 'resnet18':
+            model = ResNet18Backbone 
+            mid_features = math.ceil((512 * edge_count)/(512 + class_count))
+        if backbone == 'resnet18ext':
+            model = ResNet18BackboneExtended
+            mid_features = math.ceil((512 * edge_count)/(512 + class_count))
         self.device = device
-        self.model = model(device=device, output_dim=edge_count, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
+        self.model = model(device=device, output_dim=mid_features, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
         # self.fc2 = nn.Linear(128, lass_count * (class_count - 1) * 0.5)
-        self.fc3 = nn.Linear(edge_count, class_count)
-        self.batchnorm2 = nn.BatchNorm1d(edge_count)
+        self.fc3 = nn.Linear(mid_features, class_count)
+        self.batchnorm2 = nn.BatchNorm1d(mid_features)
         self.batch_norm3 = nn.BatchNorm1d(class_count)
         # keep logits raw at the end
 
@@ -230,7 +238,7 @@ class TournamentModel(torch.nn.Module):
         return x, mid
         
 
-class NeuralIsingTournament(nn.Module):
+class NeuralIsingTournamentFull(nn.Module):
     def __init__(self, num_classes, backbone = 'resnet18', device = 'cpu', learn_J=False, freeze_backbone=False, unfreeze_last_n=2):
         super().__init__()
         self.device = device
@@ -301,6 +309,192 @@ class NeuralIsingTournament(nn.Module):
 
         return t_probs, probs#, h
 
+class NeuralIsingTournamentSparse(nn.Module):
+    def __init__(self, num_classes, backbone = 'resnet18', device = 'cpu', learn_J=False, freeze_backbone=False, unfreeze_last_n=2, gamma=1.0):
+        super().__init__()
+        self.device = device
+        self.num_classes = num_classes
+        num_edges = num_classes * (num_classes - 1)// 2
+        self.num_edges = num_edges
+        self.backbone = backbone
+        backbone = ResNet18Backbone if backbone == 'resnet18' else MobileNetBackbone
+        # self.tournament = Tournament(num_classes=num_classes)
+        self.model = backbone(device=device, output_dim=self.num_edges, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
+        self.batchnorm = nn.BatchNorm1d(self.num_edges)
+        # self.layers = [self.model, self.batchnorm, self.sigmoid]
+        # self.asigmoid = AffineSigmoid(self.num_edges)
+        # self.asigmoid = nn.Sigmoid()
+        self.layers = [self.model, self.batchnorm]
+        # self.mms = MinMaxScaler()
+        # self.layers = [self.model, self.asigmoid]
+        self.middle = nn.Sequential(*self.layers)
+        # Build a sparse incidence matrix B (shape: [num_edges, num_classes]) such that
+        # J = (gamma/2) * (B @ B.T). Using B we can compute m @ J without materializing J.
+        incidence = self.build_signed_incidence(gamma=gamma)
+        # If user requested learnable J, we do not support learning a full dense J here
+        # because it would require materializing a massive dense matrix. Require learn_J=False
+        if learn_J:
+            raise NotImplementedError("learn_J=True is not supported with the sparse incidence implementation. Set learn_J=False.")
+        else:
+            # register sparse incidence matrix as buffer; it will move with the module to device
+            self.register_buffer("B", incidence.to_dense())
+        # for j in self.J:
+        #     print(j)
+
+    def build_signed_incidence(self, gamma=1.0):
+        """Build a sparse incidence matrix B of shape (num_edges, num_classes).
+
+        For each edge e = (i,j) we set B[e,i] = +1, B[e,j] = -1. Then
+        J = (gamma/2) * (B @ B.T). We return the sparse B (COO, coalesced).
+        """
+        edge_list = list(combinations(range(self.num_classes), 2))
+        num_edges = len(edge_list)
+
+        rows = []
+        cols = []
+        vals = []
+        for e, (i, j) in enumerate(edge_list):
+            # +1 for the first node, -1 for the second
+            rows.append(e); cols.append(i); vals.append(1.0)
+            rows.append(e); cols.append(j); vals.append(-1.0)
+
+        indices = torch.tensor([rows, cols], dtype=torch.long)
+        values = torch.tensor(vals, dtype=torch.float32)
+        B = torch.sparse_coo_tensor(indices, values, (num_edges, self.num_classes))
+        # store gamma (we'll use gamma/2 when computing J-product)
+        self._gamma = float(gamma)
+        self._gamma_adj = float(gamma) * 0.5
+        return B.coalesce()
+
+
+    def forward(self, x, max_iter=10, alpha = 1.0, train=False):
+        # Extract features
+        # features = self.backbone(x)
+        h = self.middle(x)
+        # print("h mean:", h.mean().item(), "h min:", h.min().item(), "h max:", h.max().item())
+        # h = self.bias_layer(features)  # shape: [batch, num_edges]
+
+        # Mean-field inference for marginals
+        # Initialize m_i = tanh(h_i)
+        orig_dtype = h.dtype
+        device = h.device
+        # Perform sparse mm in float32 (CUDA sparse mm doesn't support float16),
+        # but keep h in its original dtype for the non-sparse paths.
+        m = torch.tanh(h).to(torch.float32)
+        for _ in range(max_iter):
+            # If we have a sparse incidence matrix B registered, compute
+            # m @ J = (gamma/2) * ( (B @ (B.t() @ m.t())) ).t() using two sparse mm ops
+            if hasattr(self, 'B') and getattr(self, 'B') is not None:
+                # Use float32 sparse mm on CUDA even when AMP/autocast is enabled.
+                # Do not fallback to CPU; perform ops on the module/device.
+                B_buf = self.B
+                # ensure B is on the correct device
+                if B_buf.device != device:
+                    B_buf = B_buf.to(device)
+                    
+                if B_buf.is_sparse:
+                    B32 = B_buf.coalesce().to(dtype=torch.float32, device=device)
+                else:
+                    B32 = B_buf.to(dtype=torch.float32, device=device)
+
+                mt32 = m.t().to(dtype=torch.float32, device=device)
+                # y = B.t() @ m.t()  -> shape (num_classes, batch)
+                y = torch.sparse.mm(B32.t(), mt32)
+                # z = B @ y -> shape (num_edges, batch)
+                z = torch.sparse.mm(B32, y)
+                mj = z.t()  # (batch, num_edges) in float32
+
+                # combine with h (do arithmetic in fp32 for stability) and cast back
+                m = torch.tanh(h.to(torch.float32) + alpha * self._gamma_adj * mj).to(orig_dtype)
+            else:
+                # fallback dense path; ensure types are compatible
+                J_mat = getattr(self, 'J', None)
+                if J_mat is not None:
+                    if J_mat.dtype != m.dtype:
+                        J_mat = J_mat.to(dtype=m.dtype, device=device)
+                    m = torch.tanh(h.to(m.dtype) + alpha * torch.matmul(m, J_mat))
+                else:
+                    m = torch.tanh(h.to(m.dtype))
+
+        # Convert to probabilities in [0,1]
+        probs = (m + 1) / 2
+        # cast probabilities back to original dtype
+        probs = probs.to(orig_dtype)
+        # print('means', probs.mean().item(), 'stds:', probs.std().item())
+        # t_probs = self.tournament(probs)
+
+        return None, probs#, h
+
+class NeuralIsingTournament(nn.Module):
+    def __init__(self, num_classes, backbone = 'resnet18', device = 'cpu', learn_J=False, freeze_backbone=False, unfreeze_last_n=2):
+        super().__init__()
+        self.device = device
+        self.num_classes = num_classes
+        num_edges = num_classes * (num_classes - 1)// 2
+        self.num_edges = num_edges
+        self.backbone = backbone
+        backbone = ResNet18Backbone if backbone == 'resnet18' else MobileNetBackbone
+        # self.tournament = Tournament(num_classes=num_classes)
+        self.model = backbone(device=device, output_dim=self.num_edges, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
+        self.batchnorm = nn.BatchNorm1d(self.num_edges)
+        # self.layers = [self.model, self.batchnorm, self.sigmoid]
+        # self.asigmoid = AffineSigmoid(self.num_edges)
+        # self.asigmoid = nn.Sigmoid()
+        self.layers = [self.model, self.batchnorm]
+        # self.mms = MinMaxScaler()
+        # self.layers = [self.model, self.asigmoid]
+        self.middle = nn.Sequential(*self.layers)
+        adjacency_matrix = self.build_signed_adjacency()
+        # adjacency_matrix = self.tournament.gt.T
+        # self.bias_layer = nn.Linear(self.num_edges, num_edges)  # h_i
+        if learn_J:
+            self.J = nn.Parameter(adjacency_matrix.clone())
+        else:
+            self.register_buffer("J", adjacency_matrix)
+        # for j in self.J:
+        #     print(j)
+
+    def build_signed_adjacency(self, gamma=1.0):
+        edge_list = list(combinations(range(self.num_classes), 2))
+        num_edges = len(edge_list)
+        J = torch.zeros((num_edges, num_edges))
+
+        for a, (i1, j1) in enumerate(edge_list):
+            for b, (i2, j2) in enumerate(edge_list):
+                if a == b:
+                    J[a, b] = gamma  # self-interaction (optional)
+                    continue
+                shared = {i1, j1}.intersection({i2, j2})
+                if shared:
+                    shared_player = list(shared)[0]
+                    # Determine role of shared player in both edges
+                    same_role = ((shared_player == i1 and shared_player == i2) or
+                                (shared_player == j1 and shared_player == j2))
+                    J[a, b] = gamma if same_role else -gamma
+        J = J / J.norm(p=2)
+        # print(J)
+        return J
+
+
+    def forward(self, x, max_iter=10, alpha = 1.0, train=False):
+        # Extract features
+        # features = self.backbone(x)
+        h = self.middle(x)
+        # print("h mean:", h.mean().item(), "h min:", h.min().item(), "h max:", h.max().item())
+        # h = self.bias_layer(features)  # shape: [batch, num_edges]
+
+        # Mean-field inference for marginals
+        # Initialize m_i = tanh(h_i)
+        m = F.tanh(h)
+        for _ in range(max_iter):
+            m = torch.tanh(h + alpha * torch.matmul(m, self.J))  # update rule
+
+        # Convert to probabilities in [0,1]
+        probs = (m + 1) / 2
+        # print('means', probs.mean().item(), 'stds:', probs.std().item())
+        # t_probs = self.tournament(probs)
+
+        return None, probs#, h
 
 class TournamentModelVariational(torch.nn.Module):
     def __init__(self, class_count, backbone= 'resnet18', device = 'cpu', freeze_backbone=False, unfreeze_last_n=2):

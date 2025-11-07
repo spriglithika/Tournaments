@@ -1,0 +1,141 @@
+[2025-11-06 18:23:59,626] torch.distributed.run: [WARNING] 
+[2025-11-06 18:23:59,626] torch.distributed.run: [WARNING] *****************************************
+[2025-11-06 18:23:59,626] torch.distributed.run: [WARNING] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+[2025-11-06 18:23:59,626] torch.distributed.run: [WARNING] *****************************************
+  0%|          | 0/801 [00:00<?, ?it/s]  0%|          | 0/801 [00:00<?, ?it/s]  0%|          | 0/801 [00:00<?, ?it/s]  0%|          | 0/801 [00:00<?, ?it/s]  0%|          | 0/801 [00:06<?, ?it/s, loss_edges=3.84]  0%|          | 1/801 [00:06<1:31:22,  6.85s/it, loss_edges=3.84]  0%|          | 0/801 [00:06<?, ?it/s, loss_edges=3.89]  0%|          | 1/801 [00:06<1:31:25,  6.86s/it, loss_edges=3.89]  0%|          | 0/801 [00:06<?, ?it/s, loss_edges=3.82]  0%|          | 1/801 [00:06<1:32:17,  6.92s/it, loss_edges=3.82]  0%|          | 0/801 [00:06<?, ?it/s, loss_edges=4.14]  0%|          | 1/801 [00:06<1:32:25,  6.93s/it, loss_edges=4.14]  0%|          | 1/801 [00:07<1:32:25,  6.93s/it, loss_edges=3.73]  0%|          | 2/801 [00:07<43:30,  3.27s/it, loss_edges=3.73]    0%|          | 1/801 [00:07<1:31:25,  6.86s/it, loss_edges=3.87]  0%|          | 2/801 [00:07<43:42,  3.28s/it, loss_edges=3.87]    0%|          | 1/801 [00:07<1:32:17,  6.92s/it, loss_edges=4.03]  0%|          | 2/801 [00:07<43:37,  3.28s/it, loss_edges=4.03]    0%|          | 1/801 [00:07<1:31:22,  6.85s/it, loss_edges=4.03]  0%|          | 2/801 [00:07<43:50,  3.29s/it, loss_edges=4.03]    0%|          | 2/801 [00:08<56:21,  4.23s/it, loss_edges=3.73]
+  0%|          | 2/801 [00:08<56:21,  4.23s/it, loss_edges=4.03]
+  0%|          | 2/801 [00:08<56:21,  4.23s/it, loss_edges=3.87]
+Traceback (most recent call last):
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 91, in <module>
+Traceback (most recent call last):
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 91, in <module>
+  0%|          | 2/801 [00:08<56:21,  4.23s/it, loss_edges=4.03]
+Traceback (most recent call last):
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 91, in <module>
+    main(args.epochs, args.path_mod)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 78, in main
+    main(args.epochs, args.path_mod)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 78, in main
+    train_tourn_ising(device, train_loader, models, class_count, gt_stuff, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs, verbose=True)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Training_testing.py", line 302, in train_tourn_ising
+    train_tourn_ising(device, train_loader, models, class_count, gt_stuff, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs, verbose=True)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Training_testing.py", line 302, in train_tourn_ising
+    main(args.epochs, args.path_mod)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 78, in main
+    train_tourn_ising(device, train_loader, models, class_count, gt_stuff, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs, verbose=True)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Training_testing.py", line 302, in train_tourn_ising
+    out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+        return self._call_impl(*args, **kwargs)return self._call_impl(*args, **kwargs)
+
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+        return forward_call(*args, **kwargs)return forward_call(*args, **kwargs)
+
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1521, in forward
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1521, in forward
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1521, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1357, in _run_ddp_forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1357, in _run_ddp_forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1357, in _run_ddp_forward
+        return self.module(*inputs, **kwargs)  # type: ignore[index]return self.module(*inputs, **kwargs)  # type: ignore[index]
+
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+        return self._call_impl(*args, **kwargs)    return self._call_impl(*args, **kwargs)
+return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Models.py", line 412, in forward
+        return forward_call(*args, **kwargs)return forward_call(*args, **kwargs)
+
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Models.py", line 412, in forward
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Models.py", line 412, in forward
+        probs = (m + 1) / 2probs = (m + 1) / 2
+
+torch.cudatorch.cuda..OutOfMemoryErrorOutOfMemoryError: : CUDA out of memory. Tried to allocate 764.00 MiB. GPU 3 has a total capacty of 39.49 GiB of which 279.38 MiB is free. Including non-PyTorch memory, this process has 39.21 GiB memory in use. Of the allocated memory 35.37 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONFCUDA out of memory. Tried to allocate 764.00 MiB. GPU 1 has a total capacty of 39.49 GiB of which 279.38 MiB is free. Including non-PyTorch memory, this process has 39.21 GiB memory in use. Of the allocated memory 35.37 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+
+    probs = (m + 1) / 2
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 764.00 MiB. GPU 2 has a total capacty of 39.49 GiB of which 279.38 MiB is free. Including non-PyTorch memory, this process has 39.21 GiB memory in use. Of the allocated memory 35.37 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 91, in <module>
+    main(args.epochs, args.path_mod)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 78, in main
+    train_tourn_ising(device, train_loader, models, class_count, gt_stuff, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs, verbose=True)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Training_testing.py", line 302, in train_tourn_ising
+    out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1521, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/distributed.py", line 1357, in _run_ddp_forward
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Models.py", line 412, in forward
+    probs = (m + 1) / 2
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 764.00 MiB. GPU 0 has a total capacty of 39.49 GiB of which 279.38 MiB is free. Including non-PyTorch memory, this process has 39.21 GiB memory in use. Of the allocated memory 35.37 GiB is allocated by PyTorch, and 3.19 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+terminate called without an active exception
+[2025-11-06 18:25:09,707] torch.distributed.elastic.multiprocessing.api: [WARNING] Sending process 3096524 closing signal SIGTERM
+[2025-11-06 18:25:17,088] torch.distributed.elastic.multiprocessing.api: [ERROR] failed (exitcode: 1) local_rank: 0 (pid: 3096521) of binary: /usr/bin/python
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 8, in <module>
+    sys.exit(main())
+  File "/usr/local/lib/python3.10/dist-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 346, in wrapper
+    return f(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/distributed/run.py", line 806, in main
+    run(args)
+  File "/usr/local/lib/python3.10/dist-packages/torch/distributed/run.py", line 797, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.10/dist-packages/torch/distributed/launcher/api.py", line 134, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/usr/local/lib/python3.10/dist-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+MobileImNetFull.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2025-11-06_18:25:09
+  host      : alvis3-07.int.private
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 3096522)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2025-11-06_18:25:09
+  host      : alvis3-07.int.private
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 3096523)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2025-11-06_18:25:09
+  host      : alvis3-07.int.private
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 3096521)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

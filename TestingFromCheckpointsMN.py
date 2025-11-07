@@ -2,10 +2,10 @@ from preamble import *
 import Tournament
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from Models import BaseModel, MidModel, copy_matching_parameters, NeuralIsingTournament
+from Models import BaseModel, MidModel, copy_matching_parameters, NeuralIsingTournament, NeuralIsingTournamentFull
 from Training_testing import joint_train_all, joint_eval_all, ConvergenceMonitor
 from argparse import ArgumentParser
-TournamentModel = NeuralIsingTournament
+TournamentModel = NeuralIsingTournamentFull
 sce = Tournament.symmetric_cross_entropy
 Tournament = Tournament.Tournament
 

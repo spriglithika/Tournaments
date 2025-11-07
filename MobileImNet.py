@@ -2,12 +2,12 @@ from preamble import *
 import Tournament
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from Models import BaseModel, MidModel, TournamentModel, copy_matching_parameters, NeuralIsingTournament
+from Models import BaseModel, MidModel, TournamentModel, copy_matching_parameters, NeuralIsingTournamentFull
 from Training_testing import joint_train_all_ising, joint_eval_all, ConvergenceMonitor
 from argparse import ArgumentParser
 
 
-TournamentModel = NeuralIsingTournament
+TournamentModel = NeuralIsingTournamentFull
 sce = Tournament.symmetric_cross_entropy
 Tournament = Tournament.Tournament
 
@@ -41,6 +41,7 @@ class SubsetImageNet(torch.utils.data.Dataset):
 
 def main(num_epochs, path_mod):
 
+    class_count = 100
     imagenet_mean = [0.485, 0.456, 0.406]
     imagenet_std  = [0.229, 0.224, 0.225]
 
@@ -59,45 +60,35 @@ def main(num_epochs, path_mod):
     imagenet_train = datasets.ImageNet('/mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012', split='train',
                                 transform=train_transform)
     # need to make a random split for validation
-    # val_size = 5000
-    # train_size = len(imagenet_train) - val_size
-    # train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
-    imagenet_val = datasets.ImageNet('/mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012', split='val',
-                                transform=val_transform)
+    # imagenet_val = datasets.ImageNet('/mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012', split='val',
+    #                             transform=val_transform)
     
-    all_classes = list(imagenet_train.class_to_idx.values())
-    subset_classes = torch.randperm(len(all_classes))[:100].tolist()
+    all_classes = list(imagenet_train.classes)
+    subset_classes = torch.randperm(len(all_classes))[:class_count].tolist()
     print("Subclasses:")
     for i in range(10):
         print(subset_classes[i:i+10])
     # Wrap both datasets
     train_dataset = SubsetImageNet(imagenet_train, subset_classes)
-    val_dataset = SubsetImageNet(imagenet_val, subset_classes)
+    # val_dataset = SubsetImageNet(imagenet_val, subset_classes)
 
-    # print(train_dataset[0][0].shape)
-    # exit()
-    # Use pinned memory to allow async host->device transfers
-    train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, pin_memory=True, num_workers=2)
-    val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True, num_workers=2)
-    # test_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True)
-    class_count = 100
-    # image_shape = train_dataset[0][0].shape
+    val_size = int(len(train_dataset)*.2)
+    train_size = len(train_dataset) - val_size
+    train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_dataset, batch_size=2048, shuffle=True, pin_memory=True, num_workers=1, prefetch_factor=2, persistent_workers=True)
+    val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True, num_workers=1, prefetch_factor=2, persistent_workers=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    base_model = BaseModel(class_count, device = device, backbone='poop').to(device)
-    mid_model = MidModel(class_count, device = device, backbone='poop').to(device)
-    # copy_matching_parameters(base_model, mid_model)
-    tournament_model = TournamentModel(class_count, device = device, backbone='poop').to(device)
-    # copy_matching_parameters(base_model, tournament_model)
-    # optimizer_base = torch.optim.AdamW(base_model.parameters(), lr=0.01)
-    # optimizer_mid = torch.optim.AdamW(mid_model.parameters(), lr=0.01)
-    # optimizer_tournament = torch.optim.AdamW(tournament_model.parameters(), lr=0.01)
+    base_model = nn.DataParallel(BaseModel(class_count, device = device, backbone='poop').to(device))
+    mid_model = nn.DataParallel(MidModel(class_count, device = device, backbone='poop').to(device))
+    tournament_model = nn.DataParallel(TournamentModel(class_count, device = device, backbone='poop').to(device))
     optimizer_base = torch.optim.SGD(base_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     optimizer_mid = torch.optim.SGD(mid_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     optimizer_tournament = torch.optim.SGD(tournament_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    sched_base = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_base, 200)
-    sched_mid = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_mid, 200)
-    sched_tournament = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_tournament, 200)
+    sched_base = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_base, num_epochs)
+    sched_mid = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_mid, num_epochs)
+    sched_tournament = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_tournament, num_epochs)
     # num_epochs = 10
 
     models = {
@@ -117,12 +108,6 @@ def main(num_epochs, path_mod):
         print(f"Epoch {epoch}")
         joint_train_all_ising(device, train_loader, models, class_count, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs)
         joint_eval_all(device, val_loader, models, class_count, monitor=monitor, epoch=epoch)
-    # _path_mod = '' if path_mod == '' else f'_{path_mod}'
-    # Loop to save the models after training
-    # torch.save(base_model.state_dict(), f'ckpts/cifar100/resnet18/base_model_{num_epochs}{_path_mod}.pth')
-    # torch.save(mid_model.state_dict(), f'ckpts/cifar100/resnet18/mid_model_{num_epochs}{_path_mod}.pth')
-    # torch.save(tournament_model.state_dict(), f'ckpts/cifar100/resnet18/tournament_model_{num_epochs}{_path_mod}.pth')
-
     print("Done")
 
 if __name__ == "__main__":

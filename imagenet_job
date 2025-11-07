@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#SBATCH -A NAISS2025-1-35 -p alvis
+#SBATCH -t 7-00:00:00
+#SBATCH -N 1 --gpus-per-node=A100:4
+#SBATCH --error=/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/slurm_outs/%j-%x.err
+#SBATCH --output=/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/slurm_outs/%j-%x.out
+
+cd /mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments
+
+cp /mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012/ILSVRC2012_devkit_t12.tar.gz /dev/shm
+cp /mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012/ILSVRC2012_img_train.tar /dev/shm
+cp /mimer/NOBACKUP/groups/alvis_cvl/datasets/ImageNet_2012/ILSVRC2012_img_val.tar /dev/shm
+
+apptainer exec /mimer/NOBACKUP/groups/alvis_cvl/jameswag/Fish/Fish.sif torchrun --nproc_per_node=4 MobileImNetFull.py --epochs 500 --path_mod 4xA100

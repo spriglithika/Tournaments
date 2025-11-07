@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 74, in <module>
+    main(args.epochs, args.path_mod)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/MobileImNetFull.py", line 62, in main
+    train_tourn_ising(device, train_loader, models, class_count, gt_stuff, temps = [1,1,1], lbda = [0,1,1,0], epoch=epoch/num_epochs, verbose=False)
+  File "/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/Training_testing.py", line 302, in train_tourn_ising
+    out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/torch/nn/parallel/data_parallel.py", line 171, in forward
+    raise RuntimeError("module must have its parameters and buffers "
+RuntimeError: module must have its parameters and buffers on device cuda:0 (device_ids[0]) but found one of them on device: cpu

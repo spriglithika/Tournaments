@@ -4,13 +4,13 @@ import Tournament
 from TournamentThresholds import *
 import psutil
 import time
+from TournamentGroundTruth import edge_loss_sparse
 sce = Tournament.symmetric_cross_entropy
 lsce = Tournament.log_symmetric_cross_entropy
 isce = Tournament.ioannis_symmetric_cross_entropy
 
 
 # Single AMP scaler for joint backward to avoid per-model scaler interactions
-scaler = amp.GradScaler(enabled=torch.cuda.is_available())
 
 
 def smooth_labels(y, smoothing=0.1):
@@ -77,7 +77,6 @@ class ConvergenceMonitor:
             st['converged'] = True
 
         return improved
-
 
 def joint_train_all(device, train_loader, models, class_count, temps = [1,1,1], lbda = 1.0, verbose = True):
     # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
@@ -243,17 +242,17 @@ def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,
             # loss_tourn = F.mse_loss(out_tourn * target, target)
 
             # loss_tourn = F.cross_entropy(out_tourn * temps[2], target) - lbda * torch.mean((tourn_mid - 0.5).abs())
-            loss_confidence = torch.mean((out_tourn - 0.5).abs())
-            loss_edges = edge_loss(tourn_mid, models['tournament'][0].tournament.gt, target_int)
-            loss_entropy = entropy_regularization(tourn_mid, models['tournament'][0].tournament.gt, target_int)
+            # loss_confidence = torch.mean((out_tourn - 0.5).abs())
+            loss_edges, loss_entropy = edge_loss(tourn_mid, models['tournament'][0].tournament.gt, target_int)
             # loss_verts = F.l1_loss(out_tourn * temps[2], target)# * target
             pre_fixed_verts = lsce(out_tourn * temps[2], target_oh, reduction='none')
             # print(pre_fixed_verts.shape)
             loss_verts = (pre_fixed_verts * target_oh).sum(-1).mean()
-            loss_tourn = loss_verts * lbda[0] \
-                        + loss_edges * lbda[1] \
-                        + loss_entropy * lbda[2] \
-                        - loss_confidence * lbda[3]
+            # loss_tourn = loss_verts * lbda[0] \
+            #             + loss_edges * lbda[1]
+            #             + loss_entropy * lbda[2] \
+            #             - loss_confidence * lbda[3]
+            loss_tourn = loss_edges * lbda[1]
         # print(tourn_mid.mean(0))
         # scale the summed loss and backward once to keep AMP stable
         total_loss = loss_base + loss_mid + loss_tourn
@@ -285,6 +284,57 @@ def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,
     models["base"][-1].step()
     models["mid"][-1].step()
     models["tournament"][-1].step()
+
+def train_tourn_ising(device, train_loader, model, class_count, gt_stuff, temps = [1,1,1], lbda = [1.0,1.0,1.0,1.0], epoch=0, verbose = True):
+    # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
+    pbar = tqdm(train_loader) if verbose else train_loader
+    gt, gt_idx, perms = gt_stuff
+    m, _, opt, sch = model
+    m.train()
+    for batch_idx, (data, target) in enumerate(pbar):
+        data = data.to(device, non_blocking=True)
+        target_int = target.to(device, non_blocking=True)
+        target_oh = F.one_hot(target_int, num_classes=class_count).float().to(device)
+        opt.zero_grad()
+
+        out_tourn, tourn_mid = m(data, alpha = (1.5-epoch), train=True)
+        loss_edges = edge_loss_sparse(tourn_mid, (gt, gt_idx), target_int)
+        total_loss = loss_edges * lbda[1]
+        total_loss.backward()
+        opt.zero_grad()
+        opt.step()
+
+        if verbose:
+            # pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_tourn': loss_tourn.item(), 'tourn_min': out_tourn.min().item(), 'tourn_max': out_tourn.max().item()})
+            pbar.set_postfix({'loss_edges': loss_edges.item()})
+
+    sch.step()
+
+def eval_tourn(device, test_loader, models, class_count, monitor: 'ConvergenceMonitor' = None, epoch: int = None, mode = 'Val'):
+    m, _s, opt,sch = model
+    m.eval()
+    correct = 0
+
+    single = SingleConfidence(class_count).to(device)
+
+    with torch.no_grad():
+        for data, target in test_loader:
+            data = data.to(device, non_blocking=True)
+            target = target.to(device, non_blocking=True)
+            _, out_tourn_mid = model(data, train=True)
+            out_tourn_single = single(out_tourn_mid)
+
+            pred_tourn_single = out_tourn_single.argmax(dim=1, keepdim=True)
+            correct += pred_tourn_single.eq(target.view_as(pred_tourn_single)).sum().item()
+
+    accuracy = 100. * correct / len(test_loader.dataset)
+    print(f"{mode} set: Accuracy: {correct}/{len(test_loader.dataset)} ({accuracy:.2f}%)")
+    if monitor is not None:
+        try:
+            monitor.update('Tournament', float(accuracy), epoch=epoch, model=model)
+        except Exception:
+            pass
+
 
 def joint_train_all_balanced(device, train_loader, models, class_count, temps = [1,1,1], lbda = 1.0, verbose = True):
     # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
@@ -584,8 +634,6 @@ def joint_eval_all_var(device, test_loader, models, class_count, monitor: 'Conve
     single_acc = 100. * correct['tournament_single'] / len(test_loader.dataset)
     print(f"tournament_single {mode} set: Accuracy: {correct['tournament_single']}/{len(test_loader.dataset)} ({single_acc:.2f}%)")
 
-
-
 class MixUpTransform:
     def __init__(self, num_classes, alpha=1.0):
         self.alpha = alpha
@@ -616,23 +664,27 @@ class MixUpTransform:
     def _to_one_hot(self, targets):
         return torch.nn.functional.one_hot(targets, num_classes=self.num_classes).float()
 
-
 def edge_loss(x, gt, y):
     indices = gt[y]
     mask = indices != 0
     preds_selected = torch.where(indices > 0, x, 1 - x)
     reduced_set = preds_selected[mask]
     targets_set = torch.ones_like(reduced_set)  # all should be "correct"
-    return lsce(reduced_set, targets_set)
-
-
+    
+    probs = x[~mask]
+    probs = probs.clamp(1e-3, 1 - 1e-3)
+    entropy = -(probs * torch.log(probs + 1e-8) +
+                (1 - probs) * torch.log(1 - probs + 1e-8))
+    
+    return lsce(reduced_set, targets_set), entropy.mean()
 
 def entropy_regularization(x, gt, y):
     indices = gt[y]
-    mask = indices != 0
+    mask = indices == 0
     probs = x[mask]
     probs = probs.clamp(1e-3, 1 - 1e-3)
     # probs: [batch, num_classes-1], values in [0,1]
     entropy = -(probs * torch.log(probs + 1e-8) +
                 (1 - probs) * torch.log(1 - probs + 1e-8))
     return entropy.mean()
+
