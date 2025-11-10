@@ -2,7 +2,7 @@ from preamble import *
 import Tournament
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms, models
-from Models import BaseModel, MidModel, TournamentModel, copy_matching_parameters, NeuralIsingTournamentFull
+from Models import BaseModel, MidModel, TournamentModel, copy_matching_parameters, NeuralIsingTournament
 from Training_testing import joint_train_all_ising, joint_eval_all, ConvergenceMonitor
 from argparse import ArgumentParser
 from ImageNetDataset import ImageNetDataset
@@ -12,9 +12,14 @@ import os
 from zipfile import ZipFile
 
 
-TournamentModel = NeuralIsingTournamentFull
+TournamentModel = NeuralIsingTournament
 sce = Tournament.symmetric_cross_entropy
 Tournament = Tournament.Tournament
+
+
+from torch.utils.data.distributed import DistributedSampler
+
+
 
 print("MobileNetExpCasted: Modules loaded")
 
@@ -105,9 +110,11 @@ def main(num_epochs, path_mod):
     val_size = int(len(train_dataset)*.2)
     train_size = len(train_dataset) - val_size
     train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+    train_sampler = DistributedSampler(train_dataset)
+    val_sampler = DistributedSampler(val_dataset)
 
-    train_loader = DataLoader(train_dataset, batch_size=2048, shuffle=True, pin_memory=True, num_workers=4, prefetch_factor=16, persistent_workers=True)
-    val_loader = DataLoader(val_dataset, batch_size=1000, shuffle=False, pin_memory=True, num_workers=4, prefetch_factor=16, persistent_workers=True)
+    train_loader = DataLoader(train_dataset, batch_size=450, shuffle=train_sampler, pin_memory=True, num_workers=4, prefetch_factor=32, persistent_workers=True)
+    val_loader = DataLoader(val_dataset, batch_size=2000, shuffle=val_sampler, pin_memory=True, num_workers=4, prefetch_factor=32, persistent_workers=True)
 
     checkpoints = [None, None, None]
     # for path, dirs, files in os.walk(checkpoint_path):
@@ -121,14 +128,14 @@ def main(num_epochs, path_mod):
             if terms[0] == 'tournament':
                 checkpoints[2] = path + '/' + file
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    base_model = nn.DataParallel(BaseModel(class_count, device = device, backbone='poop').to(device))
+    device = torch.device(f"cuda:{local_rank}")
+    base_model = nn.parallel.DistributedDataParallel(BaseModel(class_count, device = device, backbone='poop').to(device))
     # base_checkpoint = torch.load(checkpoints[0], map_location=device)
     # base_model.load_state_dict(base_checkpoint)
-    mid_model = nn.DataParallel(MidModel(class_count, device = device, backbone='poop').to(device))
+    mid_model = nn.parallel.DistributedDataParallel(MidModel(class_count, device = device, backbone='poop').to(device))
     # mid_checkpoint = torch.load(checkpoints[1], map_location=device)
     # mid_model.load_state_dict(mid_checkpoint)
-    tournament_model = nn.DataParallel(TournamentModel(class_count, device = device, backbone='poop').to(device))
+    tournament_model = nn.parallel.DistributedDataParallel(TournamentModel(class_count, device = device, backbone='poop').to(device))
     # tourn_checkpoint = torch.load(checkpoints[2], map_location=device)
     # tournament_model.load_state_dict(tourn_checkpoint)
     optimizer_base = torch.optim.SGD(base_model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)

@@ -154,7 +154,7 @@ class MidModel(torch.nn.Module):
         # self.fc2 = nn.Linear(128, lass_count * (class_count - 1) * 0.5)
         self.fc3 = nn.Linear(mid_features, class_count)
         self.batchnorm2 = nn.BatchNorm1d(mid_features)
-        self.batch_norm3 = nn.BatchNorm1d(class_count)
+        # self.batch_norm3 = nn.BatchNorm1d(class_count)
         # keep logits raw at the end
 
     def forward(self, x, train = False):
@@ -305,7 +305,7 @@ class NeuralIsingTournamentFull(nn.Module):
         # Convert to probabilities in [0,1]
         probs = (m + 1) / 2
         # print('means', probs.mean().item(), 'stds:', probs.std().item())
-        t_probs = self.tournament(probs)
+        t_probs = None #self.tournament(probs)
 
         return t_probs, probs#, h
 
@@ -494,7 +494,7 @@ class NeuralIsingTournament(nn.Module):
         # print('means', probs.mean().item(), 'stds:', probs.std().item())
         # t_probs = self.tournament(probs)
 
-        return None, probs#, h
+        return probs#, h
 
 class TournamentModelVariational(torch.nn.Module):
     def __init__(self, class_count, backbone= 'resnet18', device = 'cpu', freeze_backbone=False, unfreeze_last_n=2):

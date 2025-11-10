@@ -4,7 +4,8 @@ import Tournament
 from TournamentThresholds import *
 import psutil
 import time
-from TournamentGroundTruth import edge_loss_sparse
+from TournamentGroundTruth import edge_loss_sparse, get_gt
+from copy import deepcopy
 sce = Tournament.symmetric_cross_entropy
 lsce = Tournament.log_symmetric_cross_entropy
 isce = Tournament.ioannis_symmetric_cross_entropy
@@ -16,13 +17,13 @@ isce = Tournament.ioannis_symmetric_cross_entropy
 def smooth_labels(y, smoothing=0.1):
     return y * (1 - smoothing) + smoothing / y.size(-1)
 
+import os
+import threading
+import torch
+
 class ConvergenceMonitor:
     """Track a metric (e.g., accuracy) per model, save best checkpoints and
     optionally mark a model as converged after a patience period.
-
-    Usage:
-      monitor = ConvergenceMonitor(patience=3, mode='max', save_dir='./ckpts')
-      joint_eval_all(..., monitor=monitor, epoch=epoch)
     """
     def __init__(self, patience=3, mode='max', save_dir='./ckpts'):
         assert mode in ('max', 'min')
@@ -30,7 +31,6 @@ class ConvergenceMonitor:
         self.mode = mode
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
-        # Per-model state
         self._state = {}
 
     def _better(self, name, value):
@@ -42,11 +42,17 @@ class ConvergenceMonitor:
         else:
             return value < st['best']
 
-    def update(self, name, value, epoch=None, model=None):
-        """Update metric for model `name`. If improved, save a snapshot.
+    def _save_async(self, state, path):
+        def _save():
+            try:
+                torch.save(state, path)
+            except Exception as e:
+                print(f"Warning: Failed to save model to {path}: {e}")
+        thread = threading.Thread(target=_save)
+        thread.daemon = True  # won't block program exit
+        thread.start()
 
-        Returns True if improvement detected (and saved), otherwise False.
-        """
+    def update(self, name, value, epoch=None, model=None):
         st = self._state.setdefault(name, {
             'best': None,
             'best_epoch': None,
@@ -60,19 +66,13 @@ class ConvergenceMonitor:
             st['best_epoch'] = epoch
             st['since_improve'] = 0
             improved = True
-            # save snapshot if model provided
             if model is not None:
                 fn = os.path.join(self.save_dir, f"{name}_best_epoch{epoch or 'NA'}.pth")
-                try:
-                    torch.save(model.state_dict(), fn)
-                except Exception:
-                    # Do not raise: saving should not interrupt training
-                    pass
+                self._save_async(deepcopy(model.state_dict()), fn)
                 st['best_path'] = fn
         else:
             st['since_improve'] = st.get('since_improve', 0) + 1
 
-        # mark converged if patience exceeded
         if st['since_improve'] >= self.patience:
             st['converged'] = True
 
@@ -212,6 +212,8 @@ def joint_train_all_variational(device, train_loader, models, class_count, temps
 def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,1,1], lbda = [1.0,1.0,1.0,1.0], epoch=0, verbose = True):
     # models: dict with keys 'base','mid','tournament' mapping to (model, scaler, optimizer)
     pbar = tqdm(train_loader) if verbose else train_loader
+    gt, _ = get_gt(class_count)
+    gt = gt.to(device)
     # min_logit = models['tournament'][0].tournament.min_logit
     # make sure all models are in training mode (joint_eval_all sets them to eval())
     for name, (m, _s, opt, sch) in models.items():
@@ -231,7 +233,8 @@ def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,
         with caster:
             out_base = models['base'][0](data, train=True)
             out_mid = models['mid'][0](data, train=True)
-            out_tourn, tourn_mid = models['tournament'][0](data, alpha = (1.5-epoch), train=True)
+            # out_tourn, tourn_mid = models['tournament'][0](data, alpha = (1.5-epoch), train=True)
+            tourn_mid = models['tournament'][0](data, alpha = (1.5-epoch), train=True)
             # print(out_tourn.shape, target_oh.shape)
             # loss_base = lsce(out_base, target)
             loss_base = F.cross_entropy(out_base * temps[0], target_oh)
@@ -243,16 +246,16 @@ def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,
 
             # loss_tourn = F.cross_entropy(out_tourn * temps[2], target) - lbda * torch.mean((tourn_mid - 0.5).abs())
             # loss_confidence = torch.mean((out_tourn - 0.5).abs())
-            loss_edges, loss_entropy = edge_loss(tourn_mid, models['tournament'][0].tournament.gt, target_int)
+            loss_edges, loss_entropy = edge_loss(tourn_mid, gt, target_int)
             # loss_verts = F.l1_loss(out_tourn * temps[2], target)# * target
-            pre_fixed_verts = lsce(out_tourn * temps[2], target_oh, reduction='none')
+            # pre_fixed_verts = lsce(out_tourn * temps[2], target_oh, reduction='none')
             # print(pre_fixed_verts.shape)
-            loss_verts = (pre_fixed_verts * target_oh).sum(-1).mean()
+            # loss_verts = (pre_fixed_verts * target_oh).sum(-1).mean()
             # loss_tourn = loss_verts * lbda[0] \
             #             + loss_edges * lbda[1]
             #             + loss_entropy * lbda[2] \
             #             - loss_confidence * lbda[3]
-            loss_tourn = loss_edges * lbda[1]
+            loss_tourn = loss_edges * lbda[1] + loss_entropy * lbda[2]
         # print(tourn_mid.mean(0))
         # scale the summed loss and backward once to keep AMP stable
         total_loss = loss_base + loss_mid + loss_tourn
@@ -278,7 +281,8 @@ def joint_train_all_ising(device, train_loader, models, class_count, temps = [1,
 
         if verbose:
             # pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_tourn': loss_tourn.item(), 'tourn_min': out_tourn.min().item(), 'tourn_max': out_tourn.max().item()})
-            pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_verts': loss_verts.item(), 'loss_edges': loss_edges.item(), 'loss_entropy': loss_entropy.item(), 'tourn_min': out_tourn.min().item(), 'tourn_max': out_tourn.max().item()})
+            # pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_verts': loss_verts.item(), 'loss_edges': loss_edges.item(), 'loss_entropy': loss_entropy.item(), 'tourn_min': out_tourn.min().item(), 'tourn_max': out_tourn.max().item()})
+            pbar.set_postfix({'loss_base': loss_base.item(), 'loss_mid': loss_mid.item(), 'loss_edges': loss_edges.item(), 'loss_entropy': loss_entropy.item()})
         # if batch_idx % 5 == 0:
             # print(f"RAM: {psutil.virtual_memory().percent}% | CPU: {psutil.cpu_percent()}%")
     models["base"][-1].step()
@@ -497,7 +501,8 @@ def joint_eval_all(device, test_loader, models, class_count, monitor: 'Convergen
             target_oh = F.one_hot(target, num_classes=class_count).float()
             out_base = models['base'][0](data, train=True)
             out_mid = models['mid'][0](data, train=True)
-            out_tourn, out_tourn_mid = models['tournament'][0](data, train=True)
+            out_tourn_mid = models['tournament'][0](data, train=True)
+            out_tourn = torch.zeros_like(out_base)
             # keep middle outputs on the same device as models/thresholds
             out_tourn_naive = naive(out_tourn_mid)
             out_tourn_center = center(out_tourn_mid)
