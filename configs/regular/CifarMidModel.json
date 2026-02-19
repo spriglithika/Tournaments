@@ -14,15 +14,19 @@
     "train":
         {
             "lr": 0.001,
-            "num_epochs": 60,
+            "num_epochs": 200,
             "batch_size": 32
         },
     "val":
         {
             "split": 0.2,
-            "patience": 20,
+            "patience": 100,
             "mode": "max"
         },
-    "save_dir": "./experiments/outputs/MidModel/",
-    "seed": 42
+    "seed": 42,
+
+  "wandb": {
+    "project": "ECCV2026",
+    "run_name": "mid_regular"
+  }
 }

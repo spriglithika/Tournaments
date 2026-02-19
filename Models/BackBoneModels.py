@@ -122,7 +122,10 @@ class BaseModel(torch.nn.Module):
         self.device = device
         self.num_classes = num_classes
         self.model = model(device=device, output_dim=num_classes, freeze=freeze_backbone, unfreeze_last_n=unfreeze_last_n)
-        self.log_Tsoft = nn.Parameter(torch.tensor(0.0)) if softening else 1.0
+        if softening:
+            self.log_Tsoft = nn.Parameter(torch.tensor(0.0))
+        else:
+            self.register_buffer('log_Tsoft', torch.tensor(0.0))
         # Do not apply BatchNorm/ReLU to final logits; keep logits raw.
 
     def forward(self, x, y = None, train = False):
@@ -149,7 +152,10 @@ class MidModel(torch.nn.Module):
         # self.fc2 = nn.Linear(128, num_classes * (num_classes - 1) * 0.5)
         self.fc3 = nn.Linear(mid_features, num_classes)
         self.batchnorm2 = nn.BatchNorm1d(mid_features)
-        self.log_Tsoft = nn.Parameter(torch.tensor(0.0)) if softening else 1.0
+        if softening:
+            self.log_Tsoft = nn.Parameter(torch.tensor(0.0))
+        else:
+            self.register_buffer('log_Tsoft', torch.tensor(0.0))
         # self.batch_norm3 = nn.BatchNorm1d(num_classes)
         # keep logits raw at the end
 

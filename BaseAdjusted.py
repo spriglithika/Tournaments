@@ -72,6 +72,26 @@ if __name__ == '__main__':
     class_matrix = torch.from_numpy(np.load(os.path.join(ddn_path, 'class_matrix.npy'))).float().to(device)
     # class_matrix = F.softmax(class_matrix, dim=0)
     class_matrix = signed_laplacian(class_matrix)
+
+    # optionally artifact the ddn class_matrix to wandb
+    if args.wandb:
+        wb = get_wandb()
+        if wb is None:
+            try:
+                init_wandb()
+                wb = get_wandb()
+            except Exception:
+                wb = None
+        if wb is not None:
+            try:
+                cm_path = os.path.join(ddn_path, 'class_matrix.npy')
+                if os.path.exists(cm_path):
+                    art = wb.Artifact('ddn_class_matrix', type='dataset')
+                    art.add_file(cm_path)
+                    wb.log_artifact(art)
+            except Exception:
+                print('Warning: wandb artifact upload failed for ddn class_matrix')
+
     monitor = ConvergenceMonitor(patience=cfg.get('val.patience', 5), mode=cfg.get('val.mode', 'max'), save_dir=cfg.get('save_dir', args.base_config.replace('.json', '').replace('configs', 'outputs_ddn')), filename='best.pth')
     # Initialize optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.get('train.lr', 1e-3))
@@ -90,8 +110,16 @@ if __name__ == '__main__':
         save_module.save_confusion_matrix(test_conf_mat, mode='test')
         save_module.save_loss_history(train_loss_history)
         if cfg.get('save_J_heatmap', False):
-            # save_module.save_J(model.J.detach().cpu().numpy())
-            save_module.save_J(model.J().detach().cpu().numpy())
+            try:
+                if hasattr(model, 'J'):
+                    Jmat = model.J() if callable(model.J) else model.J
+                    if torch.is_tensor(Jmat):
+                        jnp = Jmat.detach().cpu().numpy()
+                    else:
+                        jnp = np.array(Jmat)
+                    save_module.save_J(jnp)
+            except Exception:
+                pass
         exit()
     epoch = 0
     train_loss_history = []
@@ -103,29 +131,136 @@ if __name__ == '__main__':
 
             if val_split > 0:
                 val_loss, val_acc, val_conf_mat = ddn_extended_base_eval(model, class_matrix, device, val_loader, forward_kwargs=cfg.get('forward_kwargs', {}))
-                ece, _, _, _ = ddn_extended_eval_ece(model, class_matrix, val_loader, 20)
+                ece, accs, confs, counts = ddn_extended_eval_ece(model, class_matrix, val_loader, 20)
                 print(f'Epoch {epoch}: Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.2f} Val ECE: {ece:.4f}')
-                if monitor.update(val_acc, epoch, model):
-                    print(f'New best model saved at epoch {epoch} with Val Acc: {val_acc:.2f}%')
-                if monitor.converged:
-                    print(f'Converged at epoch {epoch}. Stopping training.')
-                    break
-                save_module.save_confusion_matrix(val_conf_mat, mode='val')
+
+                # save calibration arrays + image locally
+                try:
+                    calib_name = save_module.save_calibration(confs, accs, ece, epoch=epoch)
+                except Exception:
+                    calib_name = None
+
+                # optional wandb artifacting
+                if args.wandb:
+                    wb = get_wandb()
+                    if wb is None:
+                        try:
+                            init_wandb()
+                            wb = get_wandb()
+                        except Exception:
+                            wb = None
+                    if wb is not None:
+                        try:
+                            art = wb.Artifact(f'ddn-val-epoch-{epoch}', type='ddn')
+                            # class matrix from ddn outputs
+                            cm_path = os.path.join(ddn_path, 'class_matrix.npy')
+                            if os.path.exists(cm_path):
+                                art.add_file(cm_path)
+                            if calib_name is not None:
+                                art.add_file(os.path.join(save_module.out_dir, calib_name))
+                            cm_name = save_module.save_confusion_matrix(val_conf_mat, mode='val')
+                            if cm_name is not None:
+                                art.add_file(os.path.join(save_module.out_dir, cm_name))
+                            if cfg.get('save_J_heatmap', False):
+                                try:
+                                        jname = None
+                                        if hasattr(model, 'J'):
+                                            Jmat = model.J() if callable(model.J) else model.J
+                                            if torch.is_tensor(Jmat):
+                                                jnp = Jmat.detach().cpu().numpy()
+                                            else:
+                                                jnp = np.array(Jmat)
+                                            jname = save_module.save_J(jnp, mod=f'val_{epoch}')
+                                        if jname is not None:
+                                            art.add_file(os.path.join(save_module.out_dir, jname))
+                                except Exception:
+                                        pass
+                            wb.log_artifact(art)
+                        except Exception:
+                            print('Warning: wandb artifact failed for ddn val')
+                else:
+                    save_module.save_confusion_matrix(val_conf_mat, mode='val')
+
                 save_module.save_loss_history(train_loss_history)
-                if cfg.get('save_J_heatmap', False):
-                    # save_module.save_J(model.J.detach().cpu().numpy(), mod =f'val_{epoch}')
-                    save_module.save_J(model.J().detach().cpu().numpy(), mod =f'val_{epoch}')
+                if cfg.get('save_J_heatmap', False) and not args.wandb:
+                    try:
+                        if hasattr(model, 'J'):
+                            Jmat = model.J() if callable(model.J) else model.J
+                            if torch.is_tensor(Jmat):
+                                jnp = Jmat.detach().cpu().numpy()
+                            else:
+                                jnp = np.array(Jmat)
+                            save_module.save_J(jnp, mod=f'val_{epoch}')
+                    except Exception:
+                        pass
 
     if not args.ignore_main_eval:
         test_loss, test_acc, test_conf_mat = ddn_extended_base_eval(model, class_matrix, device, test_loader, forward_kwargs=cfg.get('forward_kwargs', {}))
         print(f'Epoch {epoch}: Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.2f}%')
         model = build_model(cfg) # re-initialize model using best saved weights
         test_loss, test_acc, test_conf_mat = ddn_extended_base_eval(model, class_matrix, device, test_loader, forward_kwargs=cfg.get('forward_kwargs', {}))
+
         save_module.save_confusion_matrix(test_conf_mat, mode='test')
         save_module.save_loss_history(train_loss_history)
+        try:
+            ece, accs, confs, counts = ddn_extended_eval_ece(model, class_matrix, test_loader, 20)
+            save_module.save_calibration(confs, accs, ece, epoch='test')
+        except Exception:
+            ece = None
+
         if cfg.get('save_J_heatmap', False):
-            # save_module.save_J(model.J.detach().cpu().numpy(), mod ='test')
-            save_module.save_J(model.J().detach().cpu().numpy(), mod ='test')
+            try:
+                jname = None
+                if hasattr(model, 'J'):
+                    Jmat = model.J() if callable(model.J) else model.J
+                    if torch.is_tensor(Jmat):
+                        jnp = Jmat.detach().cpu().numpy()
+                    else:
+                        jnp = np.array(Jmat)
+                    jname = save_module.save_J(jnp, mod='test')
+            except Exception:
+                jname = None
+
+        # optional wandb artifacts
+        if args.wandb:
+            wb = get_wandb()
+            if wb is None:
+                try:
+                    init_wandb()
+                    wb = get_wandb()
+                except Exception:
+                    wb = None
+            if wb is not None:
+                try:
+                    art = wb.Artifact('ddn-final-results', type='experiment')
+                    cm_name = os.path.join(save_module.out_dir, f'confusion_matrix_test.npy')
+                    if os.path.exists(cm_name):
+                        art.add_file(cm_name)
+                    calib_name = os.path.join(save_module.out_dir, 'calibration_epoch_test.npz')
+                    if os.path.exists(calib_name):
+                        art.add_file(calib_name)
+                    cm_path = os.path.join(ddn_path, 'class_matrix.npy')
+                    if os.path.exists(cm_path):
+                        art.add_file(cm_path)
+                    if cfg.get('save_J_heatmap', False) and jname is not None:
+                        jpath = os.path.join(save_module.out_dir, jname)
+                        if os.path.exists(jpath):
+                            art.add_file(jpath)
+                    wb.log_artifact(art)
+                except Exception:
+                    print('Warning: wandb artifact upload failed for ddn final results')
+
+        if cfg.get('save_J_heatmap', False):
+            try:
+                if hasattr(model, 'J'):
+                    Jmat = model.J() if callable(model.J) else model.J
+                    if torch.is_tensor(Jmat):
+                        jnp = Jmat.detach().cpu().numpy()
+                    else:
+                        jnp = np.array(Jmat)
+                    save_module.save_J(jnp, mod='test')
+            except Exception:
+                pass
         notify("Experiment Complete", f"Training and testing for {args.base_config.split('/')[-1]} DDN extension complete. Final Test Acc: {test_acc:.2f}%")
 
     if args.compute_ece:

@@ -1,6 +1,6 @@
 from preamble import *
-from BackBoneModels import ResNet18Backbone, MobileNetBackbone
-from IsingDeclarative import IsingJBlock
+from Models.BackBoneModels import ResNet18Backbone, MobileNetBackbone
+from Models.IsingDeclarative import IsingJBlock
 
 class NeuralIsingEnergyDeclarative(nn.Module):
     def __init__(self, num_classes, backbone = 'resnet18', device = 'cpu', freeze_backbone=False, unfreeze_last_n=2, softening = False):
@@ -19,7 +19,10 @@ class NeuralIsingEnergyDeclarative(nn.Module):
         A = self.get_decoder()
         self.ising_j_block = IsingJBlock(A, d)
         self.register_buffer("A_pinv", torch.linalg.pinv(A.to(linalg_device)).to(device))
-        self.log_Tsoft = nn.Parameter(torch.tensor(0.0)) if softening else 1.0
+        if softening:
+            self.log_Tsoft = nn.Parameter(torch.tensor(0.0))
+        else:
+            self.register_buffer('log_Tsoft', torch.tensor(0.0))
 
     def J(self):
         M, S, Q = self.ising_j_block.current_blocks()
@@ -66,7 +69,10 @@ class BradleyTerryEdgeModel(nn.Module):
         A = self.get_decoder()
         # self.ising_j_block = IsingJBlock(A, d)
         self.register_buffer("A_pinv", torch.linalg.pinv(A.to(linalg_device)).to(device))
-        self.log_Tsoft = nn.Parameter(torch.tensor(0.0)) if softening else 1.0
+        if softening:
+            self.log_Tsoft = nn.Parameter(torch.tensor(0.0))
+        else:
+            self.register_buffer('log_Tsoft', torch.tensor(0.0))
 
     # def J(self):
     #     M, S, Q = self.ising_j_block.current_blocks()

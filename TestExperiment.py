@@ -66,7 +66,16 @@ if __name__ == '__main__':
         save_module.save_confusion_matrix(test_conf_mat, mode='test')
         save_module.save_loss_history(train_loss_history)
         if cfg.get('save_J_heatmap', False):
-            save_module.save_J(model.J.detach().cpu())
+            try:
+                if hasattr(model, 'J'):
+                    Jmat = model.J() if callable(model.J) else model.J
+                    if torch.is_tensor(Jmat):
+                        jnp = Jmat.detach().cpu().numpy()
+                    else:
+                        jnp = np.array(Jmat)
+                    save_module.save_J(jnp)
+            except Exception:
+                pass
         exit()
 
     for epoch in range(1, num_epochs + 1):
@@ -84,10 +93,28 @@ if __name__ == '__main__':
             save_module.save_confusion_matrix(val_conf_mat, mode='val')
             save_module.save_loss_history(train_loss_history)
             if cfg.get('save_J_heatmap', False):
-                save_module.save_J(model.J.detach().numpy(), mod =f'val_{epoch}')
+                try:
+                    if hasattr(model, 'J'):
+                        Jmat = model.J() if callable(model.J) else model.J
+                        if torch.is_tensor(Jmat):
+                            jnp = Jmat.detach().cpu().numpy()
+                        else:
+                            jnp = np.array(Jmat)
+                        save_module.save_J(jnp, mod=f'val_{epoch}')
+                except Exception:
+                    pass
     test_loss, test_acc, test_conf_mat = eval(model, device, test_loader)
     print(f'Epoch {epoch}: Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.2f}%')
     save_module.save_confusion_matrix(test_conf_mat, mode='test')
     save_module.save_loss_history(train_loss_history)
     if cfg.get('save_J_heatmap', False):
-        save_module.save_J(model.J.detach().numpy(), mod ='test')
+        try:
+            if hasattr(model, 'J'):
+                Jmat = model.J() if callable(model.J) else model.J
+                if torch.is_tensor(Jmat):
+                    jnp = Jmat.detach().cpu().numpy()
+                else:
+                    jnp = np.array(Jmat)
+                save_module.save_J(jnp, mod='test')
+        except Exception:
+            pass

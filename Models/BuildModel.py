@@ -1,16 +1,13 @@
 
 from xml.parsers.expat import model
 from preamble import *
-from BackBoneModels import BaseModel, MidModel
-from EdgeModels import BradleyTerryEdgeModel, NeuralIsingEnergy, NeuralIsingEnergyDeclarative_J, NeuralIsingRegularizer, NeuralIsingEnergyDeclarative
+from Models.BackBoneModels import BaseModel, MidModel
+from Models.EdgeModels import BradleyTerryEdgeModel, NeuralIsingEnergyDeclarative
 
 MODEL_DICT = {
     'base': BaseModel,
     'mid': MidModel,
-    'neural_ising_reg': NeuralIsingRegularizer,
-    'neural_ising_energy':      NeuralIsingEnergy,
     'neural_ising_energy_declarative':      NeuralIsingEnergyDeclarative,
-    'neural_ising_energy_declarative_J':      NeuralIsingEnergyDeclarative_J,
     "bradley_terry_edge": BradleyTerryEdgeModel,
 }
 def build_model(cfg):
@@ -21,7 +18,7 @@ def build_model(cfg):
     print("Building model with parameters:", kwargs)
     if 'device' not in kwargs:
         kwargs['device'] = device
-    model_name = cfg.get('model.name', 'neural_ising_reg')
+    model_name = cfg.get('model.name', 'neural_ising_energy_declarative')
     if model_name not in MODEL_DICT:
         raise ValueError(f"Unsupported model name: {model_name}. Choose from {list(MODEL_DICT.keys())}.")
     model = MODEL_DICT[model_name](**kwargs).to(device)

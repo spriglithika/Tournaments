@@ -1,6 +1,5 @@
 from preamble import *
 from tqdm import tqdm
-from old_garbage.TournamentThresholds import *
 from copy import deepcopy
 import os
 import threading

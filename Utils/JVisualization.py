@@ -4,15 +4,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import List
 from Data import CLASS_LABELS
-from AdjacencyInit import J_normed_diag_gamma, J_random_normed
+from Utils.AdjacencyInit import J_normed_diag_gamma, J_random_normed
 
 def read_J(experiment: str) -> torch.Tensor:
     path = os.path.join('experiments', 'outputs', experiment, 'J.npy')
     J = np.load(path)
     return torch.tensor(J)
 
-def get_A(num_classes, num_edges):
+def get_A(num_classes):
     edge_list = list(combinations(range(num_classes), 2))
+    num_edges = len(edge_list)
     A = torch.zeros((num_edges, num_classes))
     for e, (i, j) in enumerate(edge_list):
         A[e, i] = 1
@@ -20,6 +21,29 @@ def get_A(num_classes, num_edges):
     return A
 
 def compute_class_matrix(J: torch.Tensor, labels: List[int], num_classes: int, eps: float = 1e-8) -> torch.Tensor:
+    """Compute the class-class interaction matrix from J and labels."""
+    class_matrix = torch.zeros((num_classes, num_classes), device=J.device)
+    counts = torch.zeros((num_classes, num_classes), device=J.device)
+
+    # for i in range(len(labels)):
+    #     for j in range(len(labels)):
+    #         c1 = labels[i]
+    #         c2 = labels[j]
+    #         class_matrix[c1, c2] += J[i, j]
+    #         counts[c1, c2] += 1
+    A = get_A(num_classes)
+
+    # C = class_matrix
+    # C_sym = 0.5 * (C + C.T)
+    # C_norm = C_sym / (counts + counts.T + eps)
+    direction_matrix = A.T @ J @ A
+    # print( - class_matrix)
+    # Avoid division by zero
+    # counts[counts == 0] = 1
+    # class_matrix /= counts
+    return direction_matrix
+
+def compute_class_matrix_old(J: torch.Tensor, labels: List[int], num_classes: int, eps: float = 1e-8) -> torch.Tensor:
     """Compute the class-class interaction matrix from J and labels."""
     class_matrix = torch.zeros((num_classes, num_classes), device=J.device)
     counts = torch.zeros((num_classes, num_classes), device=J.device)

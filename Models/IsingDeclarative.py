@@ -231,7 +231,7 @@ class IsingMFStructuredWithQ(torch.autograd.Function):
 def _sym(X): return 0.5 * (X + X.T)
 
 @torch.jit.script
-def declarative_forward(h, A, AtA_inv, M_raw, S_raw, V_raw, Q, T=1.0, s_max=0.85, max_iter=50, alpha=0.25, tol=1e-6, cg_max=100, cg_tol=1e-6, damp=1e-3):
+def declarative_forward(h: torch.Tensor, A: torch.Tensor, AtA_inv: torch.Tensor, M_raw: torch.Tensor, S_raw: torch.Tensor, V_raw: torch.Tensor, Q: torch.Tensor, T: float = 1.0, s_max: float = 0.85, max_iter: int = 50, alpha: float = 0.25, tol: float = 1e-6, cg_max: int = 100, cg_tol: float = 1e-6, damp: float = 1e-3):
     return IsingMFStructuredWithQ.apply(h, A, AtA_inv, M_raw, S_raw, V_raw, Q, T, s_max, max_iter, alpha, tol, cg_max, cg_tol, damp)
 
 class IsingJBlock(nn.Module):

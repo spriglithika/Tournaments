@@ -1,0 +1,58 @@
+{
+  "#note": "This is a full default configuration file (editable).  Remove or override keys in job-specific configs.",
+
+  "model": {
+    "name": "neural_ising_energy_declarative",
+    "backbone": "resnet18",
+    "freeze_backbone": false,
+    "unfreeze_last_n": 1,
+    "softening": false
+  },
+
+  "forward_kwargs": {
+    "max_iter": 50,
+    "alpha": 0.25,
+    "tol": 0.0001
+  },
+
+  "dataset": "mnist",
+  "num_classes": 10,
+  "class_list": null,
+  "samples_per_class": 10,
+  "resize": 28,
+  "label_noise": 0.0,
+  "imbalance": null,
+  "imbalance_factor": 1.0,
+
+  "train": {
+    "lr": 0.001,
+    "num_epochs": 10,
+    "batch_size": 32,
+    "weight_decay": 0.0,
+    "use_scheduler": false,
+    "lr_min": 0.00001,
+    "precision": null
+  },
+
+  "val": {
+    "split": 0.1,
+    "patience": 5,
+    "mode": "max",
+    "n_bins": 20
+  },
+
+  "test": {
+    "batch_size": null
+  },
+
+  "save_J_heatmap": false,
+
+  "seed": 42,
+
+  "wandb": {
+    "project": "tournaments",
+    "run_name": ""
+  },
+
+  "gpus": 1
+}

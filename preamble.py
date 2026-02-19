@@ -1,5 +1,5 @@
 import torch
-import torch.nn as nn
+import torch.nn as nn, autograd
 import torch.nn.functional as F
 import random
 import os
@@ -51,3 +51,71 @@ def fix_random_seeds(seed=69):
         torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
+
+# ------------------ Weights & Biases helpers ------------------
+# These helpers are intentionally lightweight and optional so importing
+# `preamble` won't fail when `wandb` isn't installed. Call `init_wandb()`
+# from your entrypoint (e.g. `TrainandTest.py`) when you want to enable W&B.
+_wandb = None
+_wandb_available = False
+
+
+def init_wandb(key: str = None, silent: bool = True):
+    """Attempt to import and (optionally) log in to wandb.
+
+    Behaviour:
+    - If `wandb` is not installed this is a no-op and returns None.
+    - If `key` is provided it will call `wandb.login(key=key)`.
+    - If `WANDB_API_KEY` is present in the environment it will be used.
+    - Returns the imported `wandb` module on success, otherwise None.
+    """
+    global _wandb, _wandb_available
+    try:
+        import wandb as _wb
+    except Exception:
+        _wandb = None
+        _wandb_available = False
+        if not silent:
+            print('wandb: not installed')
+        return None
+
+    api_key = key or os.environ.get('WANDB_API_KEY', None)
+    try:
+        if api_key:
+            _wb.login(key=api_key)
+        else:
+            # try a passive login (will succeed if user previously logged in)
+            try:
+                _wb.login()
+            except Exception:
+                pass
+        _wandb = _wb
+        _wandb_available = True
+        if not silent:
+            print('wandb: available and initialized')
+        return _wandb
+    except Exception as e:
+        _wandb = None
+        _wandb_available = False
+        if not silent:
+            print(f'wandb: initialization failed ({e})')
+        return None
+
+
+def wandb_available() -> bool:
+    return _wandb_available
+
+
+def get_wandb():
+    return _wandb
+
+
+# Auto-initialize if an API key is present in the environment (convenience)
+# This mirrors the behaviour you suggested — safe because it's wrapped
+# in try/except and does nothing if wandb isn't installed.
+if os.environ.get('WANDB_API_KEY'):
+    try:
+        init_wandb(silent=True)
+    except Exception:
+        pass

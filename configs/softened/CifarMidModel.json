@@ -1,0 +1,33 @@
+{
+    "model":
+        {
+            "name": "mid",
+            "backbone": "resnet18",
+            "freeze_backbone": false,
+            "unfreeze_last_n": 1,
+            "softening": true
+        },
+    "forward_kwargs":{},
+    "num_classes": 10,
+    "dataset": "cifar10",
+    "samples_per_class": -1,
+    "resize": 32,
+    "train":
+        {
+            "lr": 0.001,
+            "num_epochs": 200,
+            "batch_size": 32
+        },
+    "val":
+        {
+            "split": 0.2,
+            "patience": 100,
+            "mode": "max"
+        },
+    "seed": 42,
+
+  "wandb": {
+    "project": "ECCV2026",
+    "run_name": "mid_softened"
+  }
+}

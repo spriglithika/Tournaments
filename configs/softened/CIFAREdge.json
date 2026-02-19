@@ -4,7 +4,8 @@
             "name": "bradley_terry_edge",
             "backbone": "resnet18",
             "freeze_backbone": false,
-            "unfreeze_last_n": 1
+            "unfreeze_last_n": 1,
+            "softening": true
         },
     "forward_kwargs":
         {
@@ -19,15 +20,19 @@
     "train":
         {
             "lr": 0.001,
-            "num_epochs": 60,
+            "num_epochs": 200,
             "batch_size": 32
         },
     "val":
         {
             "split": 0.2,
-            "patience": 20,
+            "patience": 100,
             "mode": "max"
         },
-    "save_dir": "./experiments/outputs/EnergySoftmaxAfterL0p0001/",
-    "seed": 42
+    "seed": 42,
+
+  "wandb": {
+    "project": "ECCV2026",
+    "run_name": "edge_softened"
+  }
 }

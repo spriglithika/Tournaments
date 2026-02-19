@@ -89,12 +89,33 @@ class SaveModule:
         except Exception:
             return None
 
+    def save_calibration(self, confs, accs, ece, epoch: int = None):
+        """Save calibration data (arrays + image) to the experiment output directory.
+
+        Returns the filename (npz) written or None on failure.
+        """
+        try:
+            confs_np = np.array(confs)
+            accs_np = np.array(accs)
+        except Exception:
+            return None
+        fname = f"calibration_epoch_{epoch}.npz" if epoch is not None else "calibration_data.npz"
+        path = os.path.join(self.out_dir, fname)
+        try:
+            np.savez(path, confs=confs_np, accs=accs_np, ece=float(ece))
+            # also save a plotted PNG (unique per-epoch)
+            plot_fname = f"calibration_curve_epoch_{epoch}.png" if epoch is not None else 'calibration_curve.png'
+            plot_calibration_curve(confs_np, accs_np, ece, savepath=self.out_dir, fname=plot_fname)
+            return fname
+        except Exception:
+            return None
+
 def notify(title, text):
     os.system("""
               osascript -e 'display dialog "{}" with title "{}"'
               """.format(text, title))
 
-def plot_calibration_curve(confs, accs, ece, savepath=None):
+def plot_calibration_curve(confs, accs, ece, savepath=None, fname: str = None):
     confs = np.array(confs)
     accs = np.array(accs)
     mask = ~np.isnan(confs)
@@ -110,7 +131,9 @@ def plot_calibration_curve(confs, accs, ece, savepath=None):
     plt.title('Calibration Curve')
     plt.legend()
     if savepath:
-        path = os.path.join(savepath, 'calibration_curve.png')
+        if fname is None:
+            fname = 'calibration_curve.png'
+        path = os.path.join(savepath, fname)
         plt.savefig(path)
     else:
         plt.show()
