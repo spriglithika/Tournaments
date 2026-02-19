@@ -1,10 +1,10 @@
 from preamble import *
 from argparse import ArgumentParser
-from TrainingFuncs import train, eval, ConvergenceMonitor, eval_ece
+from Utils.TrainingFuncs import train, eval, ConvergenceMonitor, eval_ece
 from Data import add_label_noise, get_data_loader
-from config_reader import load_config
-from BuildModel import build_model
-from Utils import SaveModule, notify, plot_calibration_curve
+from Utils.config_reader import load_config
+from Models.BuildModel import build_model
+from Utils.Saving import SaveModule, notify, plot_calibration_curve
 
 
 
@@ -34,7 +34,8 @@ if __name__ == '__main__':
                                     class_list=cfg.get('class_list', None),
                                     samples_per_class=cfg.get('samples_per_class', 10),
                                     resize=cfg.get('resize', 28),
-                                    imbalance=cfg.get('imbalance', None),)
+                                    imbalance=cfg.get('imbalance', None),
+                                    imbalance_factor=cfg.get('imbalance_factor', 1.0))
         val_split = cfg.get('val.split', 0.1)
         if val_split > 0:
             total_size = len(train_loader.dataset)

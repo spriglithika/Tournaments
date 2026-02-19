@@ -1,10 +1,10 @@
 from preamble import *
 from argparse import ArgumentParser
-from TrainingFuncs import ddn_extended_base_train, ddn_extended_base_eval, ConvergenceMonitor, ddn_extended_eval_ece
+from Utils.TrainingFuncs import ddn_extended_base_train, ddn_extended_base_eval, ConvergenceMonitor, ddn_extended_eval_ece
 from Data import add_label_noise, get_data_loader
-from config_reader import load_config
-from BuildModel import build_model
-from Utils import SaveModule, notify, plot_calibration_curve
+from Utils.config_reader import load_config
+from Models.BuildModel import build_model
+from Utils.Saving import SaveModule, notify, plot_calibration_curve
 
 
 

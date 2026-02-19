@@ -19,7 +19,8 @@ def get_data_loader(num_classes: int = 2,
                        dataset: str = 'mnist',
                        root: str = '.',
                        label_noise: float = 0.0,
-                       imbalance=None) -> DataLoader:
+                       imbalance=None,
+                       imbalance_factor: float = 1.0) -> DataLoader:
     """Return a DataLoader containing up to `samples_per_class` examples for
     each class in `class_list` (or 0..num_classes-1 if not provided).
 
@@ -95,6 +96,8 @@ def get_data_loader(num_classes: int = 2,
             subset.dataset.targets[idx] = noisy_labels[i].item()
     if imbalance is not None:
         subset = make_imbalanced(subset, imbalance)
+    if imbalance_factor != 1.0:
+        subset = make_longtailed_subset(subset, num_classes, imbalance_factor)
 
     loader = DataLoader(subset, batch_size=batch_size if train else len(subset), shuffle=train)
     return loader
@@ -115,6 +118,60 @@ def make_imbalanced(dataset, class_fractions, seed=42):
         keep_indices.extend(rng.choice(idxs, k, replace=False))
 
     return torch.utils.data.Subset(dataset, keep_indices)
+
+def make_longtailed_subset(subset, num_classes, imbalance_ratio=100, seed=42):
+    """
+    Convert an existing Subset into a long-tailed version with a given imbalance ratio.
+    - imbalance_ratio = 1   → balanced
+    - imbalance_ratio = 100 → 100:1 long-tail
+    Preserves dataset indexing and returns another Subset.
+
+    Randomly permutes which class is majority/minority (reviewer-safe).
+    """
+    rng = np.random.default_rng(seed)
+
+    # Step 1: Extract labels for the *subset* indices
+    # We need to unwrap nested subsets correctly:
+    indices = subset.indices
+    base = subset.dataset
+    while isinstance(base, Subset):
+        base_indices = base.indices
+        indices = [base_indices[i] for i in indices]
+        base = base.dataset
+
+    # Base dataset -> get labels
+    if hasattr(base, 'targets'):
+        all_labels = base.targets
+    elif hasattr(base, 'labels'):
+        all_labels = base.labels
+    else:
+        all_labels = [lab for _, lab in base]
+
+    # Step 2: Group subset indices by class
+    class_to_indices = {c: [] for c in range(num_classes)}
+    for sub_i, base_i in enumerate(indices):
+        c = int(all_labels[base_i])
+        class_to_indices[c].append(sub_i)
+
+    # Step 3: Random permutation of class order (reviewer-safe)
+    perm = rng.permutation(num_classes)
+
+    # Step 4: Compute exponential decay fractions
+    ranks = np.arange(num_classes)  # 0 = largest, K-1 = smallest
+    decay = imbalance_ratio ** (-ranks / (num_classes - 1))  # shape (K,)
+
+    # Step 5: Assign counts per class using permuted ranking
+    keep = []
+    for orig_c, rank_c in enumerate(perm):
+        frac = decay[rank_c]
+        idxs = class_to_indices[orig_c]
+        k = max(1, int(len(idxs) * frac))
+        keep.extend(rng.choice(idxs, k, replace=False))
+
+    # Map back to base indices
+    final_indices = [subset.indices[i] for i in keep]
+    return Subset(subset.dataset, final_indices)
+
 
 
 def add_label_noise(labels, num_classes, noise_rate):

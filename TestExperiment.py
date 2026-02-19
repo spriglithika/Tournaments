@@ -1,10 +1,10 @@
 from preamble import *
 from argparse import ArgumentParser
-from TrainingFuncs import train, eval, ConvergenceMonitor
+from Utils.TrainingFuncs import train, eval, ConvergenceMonitor
 from Data import get_data_loader
-from config_reader import load_config
-from BuildModel import build_model
-from Utils import SaveModule
+from Utils.config_reader import load_config
+from Models.BuildModel import build_model
+from Utils.Saving import SaveModule
 
 
 

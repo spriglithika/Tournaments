@@ -101,3 +101,29 @@ Base        --
 Mid         -- 75.76  0.1432
 MF          -- 76.16  0.1773
 Dec         -- 75.53  0.1905  Epoch 55  --  75.66  0.1768  Epoch 31  --  71.24  0.0220  Epoch 6   --  67.86  0.0596  Epoch 4  -- S1
+
+===== ALVIS =====
+CIFAR10 Regular
+---------------
+Base
+Mid
+Edge
+DNN             ++
+DDN Temperature Modulated
+DNN Scheduled   ++ use these to choose best practice
+---------------
+CIFAR10 Long Tail
+---------------
+Base
+Mid
+Edge
+DNN
+---------------
+CIFAR10 Noise (0.2, 0,4)
+---------------
+Base
+Mid
+Edge
+DNN
+---------------
+
