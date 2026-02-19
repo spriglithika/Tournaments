@@ -1,0 +1,2 @@
+alpha,gamma,max_iter,acc_pre,acc_pre_sc,acc_post,acc_post_sc,iters_pre,iters_post,J_image,J_min,J_max
+0.500,0.500,10,0.124,0.091,0.991,0.991,3,6,J_a0p500_g0p500_m10_i1.png,-0.094,0.087

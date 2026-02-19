@@ -1,0 +1,37 @@
+{
+    "model":
+        {
+            "name": "neural_ising_reg",
+            "backbone": "resnet18",
+            "freeze_backbone": false,
+            "learn_J": false,
+            "unfreeze_last_n": 1,
+            "gamma": 0.5,
+            "trinary": false
+        },
+    "forward_kwargs":
+        {
+            "max_iter": 10,
+            "alpha": 0.1,
+            "tol": 1e-4
+        },
+    "num_classes": 10,
+    "dataset": "mnist",
+    "samples_per_class": 1000,
+    "resize": 28,
+    "train":
+        {
+            "lr": 0.001,
+            "num_epochs": 30,
+            "batch_size": 32
+        },
+    "val":
+        {
+            "split": 0.2,
+            "patience": 5,
+            "mode": "max"
+        },
+    "save_dir": "./experiments/outputs/NeuralIsingReg/",
+    "save_J_heatmap": true,
+    "seed": 42
+}

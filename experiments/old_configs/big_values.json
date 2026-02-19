@@ -1,0 +1,13 @@
+{
+  "num_classes": 10,
+  "samples_per_class": 10,
+  "resize": 28,
+  "train_adj": true,
+  "train_epochs": 25,
+  "out_dir": "./experiments/outputs/big_values/",
+  "grid": {
+    "alphas": [1, 2, 5],
+    "gammas": [1,2,5],
+    "max_iters": [15,20,30]
+  }
+}
