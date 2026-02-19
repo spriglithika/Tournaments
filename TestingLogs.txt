@@ -1,208 +1,103 @@
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/dropout_0.2_lambda_1
-    base Val set: Average loss: -78.0244, Accuracy: 7233/10000 (72.33%)
-    mid Val set: Average loss: -81.9609, Accuracy: 7144/10000 (71.44%)
-    tournament Val set: Average loss: -36.3187, Accuracy: 7143/10000 (71.43%)
-    tournament_naive Val set: Accuracy: 7143/10000 (71.43%)
-    tournament_center Val set: Accuracy: 7112/10000 (71.12%)
-    tournament_bern Val set: Accuracy: 7115/10000 (71.15%)
-    tournament_seperate Val set: Accuracy: 7143/10000 (71.43%)
-    tournament_single Val set: Accuracy: 12/10000 (0.12%)
+====== MNIST =======
+Energy L0.0001 SP Alpha 0.5             -- 98.77 # normed
+Energy L0.0001 SP Alpha 0.5             -- 98.27
+Energy L0.0001 SP Alpha 0.5 Norm J      -- 98.85
+Energy L0.0001 SP Alpha 0.5 Norm J      -- 98.72 # normed
+Energy L0.0001 SP Alpha 0.5 no diag     -- 98.72 # normed
+Energy L0.001 SP Alpha 0.5              -- 98.65 # normed
+Energy L0.01 SP  Alpha 0.5              -- 98.60 # normed
+Energy L0.1 SP	 Alpha 0.5              -- 98.18 # normed
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/separated_lambda_2_temp_10 # Barely ran (40 epochsish)
-    base Val set: Average loss: -70.0500, Accuracy: 5472/10000 (54.72%)
-    mid Val set: Average loss: -73.8710, Accuracy: 5731/10000 (57.31%)
-    tournament Val set: Average loss: -35.8306, Accuracy: 3352/10000 (33.52%)
-    tournament_naive Val set: Accuracy: 111/10000 (1.11%)
-    tournament_center Val set: Accuracy: 57/10000 (0.57%)
-    tournament_bern Val set: Accuracy: 122/10000 (1.22%)
-    tournament_seperate Val set: Accuracy: 3801/10000 (38.01%)
-    tournament_single Val set: Accuracy: 2/10000 (0.02%)
+Energy L0.01 No SP	                    -- 98.58 # normed
+Energy L0.1 No SP	                    -- 98.28 # normed
+Energy L0.001 No SP	                    -- 98.17 # normed
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/separated_lambda_2  # Barely ran (5 epochsish)
-    base Val set: Average loss: -63.1483, Accuracy: 3909/10000 (39.09%)
-    mid Val set: Average loss: -62.9799, Accuracy: 4011/10000 (40.11%)
-    tournament Val set: Average loss: -35.9093, Accuracy: 3003/10000 (30.03%)
-    tournament_naive Val set: Accuracy: 317/10000 (3.17%)
-    tournament_center Val set: Accuracy: 2001/10000 (20.01%)
-    tournament_bern Val set: Accuracy: 643/10000 (6.43%)
-    tournament_seperate Val set: Accuracy: 3184/10000 (31.84%)
-    tournament_single Val set: Accuracy: 0/10000 (0.00%)
+Energy A0.2 Mi10 Norm                   -- 98.54
+Energy L0.1 Mi5             	        -- 98.51 # main energy, normed
+Energy L0.1 Mi5 no diag     	        -- 98.60 # main energy, normed
+Energy L0.1 Alpha 0.5                   -- 98.45 # normed
+Energy L0.1 Alpha 0.5                   -- 98.25
+Energy L0.01 Alpha 0.5                  -- 98.27 # normed
+Regularizing Alpha 0.2 no diag          -- 97.82
+Regularizing Alpha 0.2 Steady J         -- 97.81
+Energy Norm J no Diag                   -- 98.12
+Energy Norm J                           -- 98.41
+Energy Norm J No Norm E                 -- 97.32
+Energy Norm J Mi3                       -- 97.91
+Z   				                    -- 98.71
+Z steady J  				            -- 97.78
+Z no diag  				                -- 98.75
+Z Mi5                                   -- 98.97 ************
+Z No J				                    -- 98.54
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/sep_preds
-    base Val set: Average loss: -77.9949, Accuracy: 7221/10000 (72.21%)
-    mid Val set: Average loss: -82.1516, Accuracy: 7171/10000 (71.71%)
-    tournament Val set: Average loss: -35.9292, Accuracy: 6965/10000 (69.65%)
-    tournament_naive Val set: Accuracy: 3566/10000 (35.66%)
-    tournament_center Val set: Accuracy: 279/10000 (2.79%)
-    tournament_bern Val set: Accuracy: 1765/10000 (17.65%)
-    tournament_seperate Val set: Accuracy: 6977/10000 (69.77%)
-    tournament_single Val set: Accuracy: 0/10000 (0.00%)
+Base				                    -- 97.04
+Mid				                        -- 98.35
+Reg                                     -- 98.09
+Energy                                  -- 98.71
+Raw Energy                              -- 99.41
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/lamda_2_confidence
-    base Val set: Average loss: -77.9412, Accuracy: 7235/10000 (72.35%)
-    mid Val set: Average loss: -82.1290, Accuracy: 7083/10000 (70.83%)
-    tournament Val set: Average loss: -36.1277, Accuracy: 7160/10000 (71.60%)
-    tournament_naive Val set: Accuracy: 6733/10000 (67.33%)
-    tournament_center Val set: Accuracy: 6600/10000 (66.00%)
-    tournament_bern Val set: Accuracy: 6813/10000 (68.13%)
-    tournament_seperate Val set: Accuracy: 7160/10000 (71.60%)
-    tournament_single Val set: Accuracy: 1/10000 (0.01%)
+===== CIFAR10 ======
+Energy L0.01 SP  Alpha 0.5              -- 56.79 # normed
+Energy L0.0001 SP Alpha 0.5             -- 57.92 # normed
+Energy L0.1 Mi5 no diag     	        -- 56.90 # main energy, normed
+energy softplus Alpha 0.5               -- 56.79 # normed energy
+energy softplus Alpha 0.1		        -- 57.08
+energy Alpha 0.1		                -- 57.80
+Z                                       -- 55.99
+Z Mi5                                   -- 54.31 # converged early
+Z mi5 A0.5                              -- 55.70 # converged early
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/dropout_lambda_1
-    base Val set: Average loss: -78.0244, Accuracy: 7233/10000 (72.33%)
-    mid Val set: Average loss: -81.9205, Accuracy: 7128/10000 (71.28%)
-    tournament Val set: Average loss: -36.3174, Accuracy: 7061/10000 (70.61%)
-    tournament_naive Val set: Accuracy: 7079/10000 (70.79%)
-    tournament_center Val set: Accuracy: 7047/10000 (70.47%)
-    tournament_bern Val set: Accuracy: 7034/10000 (70.34%)
-    tournament_seperate Val set: Accuracy: 7061/10000 (70.61%)
-    tournament_single Val set: Accuracy: 18/10000 (0.18%)
+Base				                    -- 56.85
+Mid				                        -- 58.15
+Reg				                        -- 60.06 ************
+Energy (from FMNIST)                    -- 58.92
+Raw                                     -- 57.11
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/cross_entropy_and_confidence
-    base Val set: Average loss: -77.9412, Accuracy: 7235/10000 (72.35%)
-    mid Val set: Average loss: -82.1290, Accuracy: 7083/10000 (70.83%)
-    tournament Val set: Average loss: -36.1215, Accuracy: 7128/10000 (71.28%)
-    tournament_naive Val set: Accuracy: 6658/10000 (66.58%)
-    tournament_center Val set: Accuracy: 6464/10000 (64.64%)
-    tournament_bern Val set: Accuracy: 6786/10000 (67.86%)
-    tournament_seperate Val set: Accuracy: 7128/10000 (71.28%)
-    tournament_single Val set: Accuracy: 3/10000 (0.03%)
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/all_three_no_lamda_no_temp   # Didn't finish
-    base Val set: Average loss: -77.5897, Accuracy: 6696/10000 (66.96%)
-    mid Val set: Average loss: -82.3662, Accuracy: 6458/10000 (64.58%)
-    tournament Val set: Average loss: -36.0335, Accuracy: 6465/10000 (64.65%)
-    tournament_naive Val set: Accuracy: 6270/10000 (62.70%)
-    tournament_center Val set: Accuracy: 4394/10000 (43.94%)
-    tournament_bern Val set: Accuracy: 4094/10000 (40.94%)
-    tournament_seperate Val set: Accuracy: 6463/10000 (64.63%)
-    tournament_single Val set: Accuracy: 0/10000 (0.00%)
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/all_10_temp
-    base Val set: Average loss: -94.9976, Accuracy: 7076/10000 (70.76%)
-    mid Val set: Average loss: -93.5702, Accuracy: 6807/10000 (68.07%)
-    tournament Val set: Average loss: -36.1159, Accuracy: 7086/10000 (70.86%)
-    tournament_naive Val set: Accuracy: 6761/10000 (67.61%)
-    tournament_center Val set: Accuracy: 6336/10000 (63.36%)
-    tournament_bern Val set: Accuracy: 6689/10000 (66.89%)
-    tournament_seperate Val set: Accuracy: 7085/10000 (70.85%)
-    tournament_single Val set: Accuracy: 14/10000 (0.14%)
+=== Noisy FMNIST ===
+Base        -- 91.63
+Mid         -- 91.51
+Reg         -- 71.40
+Energy      -- 90.56  0.0580
+Raw         -- 87.38
+Base   0.1  -- 90.95
+Mid    0.1  -- 90.98  0.0610
+Energy 0.1  -- 89.45  0.3999
+Reg    0.1  -- -----
+Base   0.2  -- 90.13  0.1620
+Mid    0.2  -- 90.13
+Energy 0.2  -- 90.60,
+Reg    0.2  -- -----
+Base   0.3  -- 89.57
+Mid    0.3  -- 90.02
+Energy 0.3  -- 89.86
+Reg    0.3  -- -----
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/20_temp
-    base Val set: Average loss: -77.8426, Accuracy: 7212/10000 (72.12%)
-    mid Val set: Average loss: -81.9668, Accuracy: 7127/10000 (71.27%)
-    tournament Val set: Average loss: -36.0914, Accuracy: 7065/10000 (70.65%)
-    tournament_naive Val set: Accuracy: 6825/10000 (68.25%)
-    tournament_center Val set: Accuracy: 6180/10000 (61.80%)
-    tournament_bern Val set: Accuracy: 6606/10000 (66.06%)
-    tournament_seperate Val set: Accuracy: 7064/10000 (70.64%)
-    tournament_single Val set: Accuracy: 15/10000 (0.15%)
 
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/10_temp_scaled
-    base Val set: Average loss: -77.8426, Accuracy: 7212/10000 (72.12%)
-    mid Val set: Average loss: -81.9668, Accuracy: 7127/10000 (71.27%)
-    tournament Val set: Average loss: -36.0910, Accuracy: 7103/10000 (71.03%)
-    tournament_naive Val set: Accuracy: 6858/10000 (68.58%)
-    tournament_center Val set: Accuracy: 6082/10000 (60.82%)
-    tournament_bern Val set: Accuracy: 6591/10000 (65.91%)
-    tournament_seperate Val set: Accuracy: 7103/10000 (71.03%)
-    tournament_single Val set: Accuracy: 15/10000 (0.15%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/10_temp
-    base Val set: Average loss: -78.0414, Accuracy: 7204/10000 (72.04%)
-    mid Val set: Average loss: -82.0280, Accuracy: 7145/10000 (71.45%)
-    tournament Val set: Average loss: -35.9857, Accuracy: 7101/10000 (71.01%)
-    tournament_naive Val set: Accuracy: 6111/10000 (61.11%)
-    tournament_center Val set: Accuracy: 3272/10000 (32.72%)
-    tournament_bern Val set: Accuracy: 4885/10000 (48.85%)
-    tournament_seperate Val set: Accuracy: 7101/10000 (71.01%)
-    tournament_single Val set: Accuracy: 5/10000 (0.05%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/5_temp
-    base Val set: Average loss: -77.8776, Accuracy: 7242/10000 (72.42%)
-    mid Val set: Average loss: -81.9498, Accuracy: 7111/10000 (71.11%)
-    tournament Val set: Average loss: -36.0986, Accuracy: 7123/10000 (71.23%)
-    tournament_naive Val set: Accuracy: 6740/10000 (67.40%)
-    tournament_center Val set: Accuracy: 6231/10000 (62.31%)
-    tournament_bern Val set: Accuracy: 6633/10000 (66.33%)
-    tournament_seperate Val set: Accuracy: 7122/10000 (71.22%)
-    tournament_single Val set: Accuracy: 12/10000 (0.12%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/balanced/default
-    base Val set: Average loss: 1.1708, Accuracy: 7250/10000 (72.50%)
-    mid Val set: Average loss: 1.3388, Accuracy: 7102/10000 (71.02%)
-    tournament Val set: Average loss: 4.5558, Accuracy: 3926/10000 (39.26%)
-    tournament_naive Val set: Accuracy: 153/10000 (1.53%)
-    tournament_center Val set: Accuracy: 6850/10000 (68.50%)
-    tournament_bern Val set: Accuracy: 2986/10000 (29.86%)
-    tournament_seperate Val set: Accuracy: 6246/10000 (62.46%)
-    tournament_single Val set: Accuracy: 2577/10000 (25.77%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar10/resnet18/solver/default
-    base Val set: Average loss: 0.3516, Accuracy: 9266/10000 (92.66%)
-    mid Val set: Average loss: 0.3765, Accuracy: 9225/10000 (92.25%)
-    tournament Val set: Average loss: 1.7076, Accuracy: 9132/10000 (91.32%)
-    tournament_naive Val set: Accuracy: 9128/10000 (91.28%)
-    tournament_center Val set: Accuracy: 9003/10000 (90.03%)
-    tournament_bern Val set: Accuracy: 8944/10000 (89.44%)
-    tournament_seperate Val set: Accuracy: 9119/10000 (91.19%)
-    tournament_single Val set: Accuracy: 54/10000 (0.54%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/variational/cifar100
-    base Val set: Average loss: 1.1893, Accuracy: 7206/10000 (72.06%)
-    mid Val set: Average loss: 1.3477, Accuracy: 7099/10000 (70.99%)
-    tournament Val set: Average loss: 4.8721, Accuracy: 7105/10000 (71.05%)
-    tournament_naive Val set: Accuracy: 13/10000 (0.13%)
-    tournament_center Val set: Accuracy: 12/10000 (0.12%)
-    tournament_bern Val set: Accuracy: 10/10000 (0.10%)
-    tournament_seperate Val set: Accuracy: 13/10000 (0.13%)
-    tournament_single Val set: Accuracy: 7105/10000 (71.05%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/variational/cifar100_opposite_entropy
-    base Val set: Average loss: 1.1893, Accuracy: 7206/10000 (72.06%)
-    mid Val set: Average loss: 1.3477, Accuracy: 7099/10000 (70.99%)
-    tournament Val set: Average loss: 4.7619, Accuracy: 7127/10000 (71.27%)
-    tournament_naive Val set: Accuracy: 2/10000 (0.02%)
-    tournament_center Val set: Accuracy: 0/10000 (0.00%)
-    tournament_bern Val set: Accuracy: 9/10000 (0.09%)
-    tournament_seperate Val set: Accuracy: 1/10000 (0.01%)
-    tournament_single Val set: Accuracy: 7127/10000 (71.27%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/variational/cifar100_class_alpha_1.5
-    base Val set: Average loss: 1.1849, Accuracy: 7215/10000 (72.15%)
-    mid Val set: Average loss: 1.3329, Accuracy: 7141/10000 (71.41%)
-    tournament Val set: Average loss: 4.8724, Accuracy: 7113/10000 (71.13%)
-    tournament_naive Val set: Accuracy: 11/10000 (0.11%)
-    tournament_center Val set: Accuracy: 10/10000 (0.10%)
-    tournament_bern Val set: Accuracy: 10/10000 (0.10%)
-    tournament_seperate Val set: Accuracy: 12/10000 (0.12%)
-    tournament_single Val set: Accuracy: 7113/10000 (71.13%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/variational/unscaled_alpha
-    base Val set: Average loss: 1.1879, Accuracy: 7226/10000 (72.26%)
-    mid Val set: Average loss: 1.3278, Accuracy: 7113/10000 (71.13%)
-    tournament Val set: Average loss: 4.9525, Accuracy: 6885/10000 (68.85%)
-    tournament_naive Val set: Accuracy: 1/10000 (0.01%)
-    tournament_center Val set: Accuracy: 0/10000 (0.00%)
-    tournament_bern Val set: Accuracy: 2/10000 (0.02%)
-    tournament_seperate Val set: Accuracy: 1/10000 (0.01%)
-    tournament_single Val set: Accuracy: 6885/10000 (68.85%)
-
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/cifar100/resnet18/variational/less_iter
-    base Val set: Average loss: 1.1849, Accuracy: 7215/10000 (72.15%)
-    mid Val set: Average loss: 1.3329, Accuracy: 7141/10000 (71.41%)
-    tournament Val set: Average loss: 4.8711, Accuracy: 7067/10000 (70.67%)
-    tournament_naive Val set: Accuracy: 10/10000 (0.10%)
-    tournament_center Val set: Accuracy: 9/10000 (0.09%)
-    tournament_bern Val set: Accuracy: 12/10000 (0.12%)
-    tournament_seperate Val set: Accuracy: 13/10000 (0.13%)
-    
-/mimer/NOBACKUP/groups/alvis_cvl/hannahhe/Tournaments/ckpts/imagenet/mobilenet/full_train
-    base Val set: Average loss: 0.8447, Accuracy: 2239/2850 (78.56%)
-    mid Val set: Average loss: 0.7494, Accuracy: 2311/2850 (81.09%)
-    tournament Val set: Average loss: 4.9147, Accuracy: 2289/2850 (80.32%)
-    tournament_naive Val set: Accuracy: 0/2850 (0.00%)
-    tournament_center Val set: Accuracy: 0/2850 (0.00%)
-    tournament_bern Val set: Accuracy: 2/2850 (0.07%)
-    tournament_seperate Val set: Accuracy: 0/2850 (0.00%)
-    tournament_single Val set: Accuracy: 2289/2850 (80.32%)
+MNIST Full
+Base        -- 99.47  0.0028
+Mid         -- 98.76  0.0066
+MF          -- 99.46  0.0065
+FMNIST Full
+Base        -- 91.92  0.0628
+Mid         -- 92.16  0.0631
+MF          -- 91.82  0.0601
+Dec         -- 91.86  0.6386  Epoch 13  --  90.57  0.6657  Epoch 5   --  88.73  0.6687  Epoch 2   --  85.56  0.6419  Epoch 1
+DDN         -- 91.85  0.0654  Epoch 44  --  91.61  0.0546  Epoch 18  --  91.81  0.0479  Epoch 16  --  91.88  0.0482  Epoch 15  --  91.83  0.0262  Epoch 10  --  91.29  0.0209  Epoch 8   --  91.01  0.0138  Epoch 7
+CIFAR10 Full
+Base        -- 76.99  0.1785
+BaseDDNext  -- 76.96  0.1770
+Mid         -- 77.14  0.1736  Epoch 54  --  76.85  0.1724  Epoch 41  --  76.56  0.1735  Epoch 40  --  76.16  0.1766  Epoch 28  --  76.16  0.1700  Epoch 21  --  76.19  0.1275  Epoch 6
+MF          -- 75.77  0.1982
+DecFull     -- 76.09  0.1907  Epoch 60  --  76.86  0.1765  Epoch 44  --  76.98  0.1768  Epoch 42  --  76.34  0.1684  Epoch 30  --  76.50  0.1366  Epoch 13  --  75.20  0.0233  Epoch 5
+Edge        -- 76.96  0.1665  End
+Dec         -- 74.86  0.1768  Epoch 24  --  74.58  0.1748  Epoch 20
+MF L -4     -- 77.49  0.1688  Epoch 50  --  76.31  0.1731  Epoch 36  --  75.61  0.1736  Epoch 30  --  76.49  0.1468  Epoch 20  --  76.10  0.1216  Epoch 14  --  76.00  0.0629  Epoch 8   --  73.08  0.1363  Epoch 6   S2
+MF B 0.2    -- 75.62  0.1341  Epoch 15  --  76.21  0.0792  Epoch 7
+MF B 0.5    -- 75.65  0.1443  Epoch 16  --  74.40  0.0706  Epoch 7
+CIFAR10 Artificial Long Tail
+Base        --
+Mid         -- 75.76  0.1432
+MF          -- 76.16  0.1773
+Dec         -- 75.53  0.1905  Epoch 55  --  75.66  0.1768  Epoch 31  --  71.24  0.0220  Epoch 6   --  67.86  0.0596  Epoch 4  -- S1

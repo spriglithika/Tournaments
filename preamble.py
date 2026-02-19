@@ -4,8 +4,14 @@ import torch.nn.functional as F
 import random
 import os
 import numpy as np
+import math
 import contextlib
 import torch.distributed as dist
+from torchvision import datasets, transforms, models
+from itertools import combinations
+
+# set mps cpu fallback
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 def launched_by_torchrun():
     return "LOCAL_RANK" in os.environ and "RANK" in os.environ and "WORLD_SIZE" in os.environ
@@ -15,20 +21,21 @@ def setup_ddp():
     torch.cuda.set_device(local_rank)
     dist.init_process_group(backend="nccl")
     return local_rank
-device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
+device = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+linalg_device = 'cpu' if device.type == 'mps' else device
 if launched_by_torchrun():
     local_rank = setup_ddp()
     device = torch.device(f"cuda:{local_rank}")
     device_type = device.type
 if float(torch.__version__.split(".")[0]+"."+torch.__version__.split(".")[1]) >= 2.4:
     amp = torch.amp
-    caster = torch.amp.autocast(enabled=torch.cuda.is_available(), device_type=device_type)
-    amp_ctx = torch.amp.autocast(enabled=False, device_type=device_type) if torch.cuda.is_available() else contextlib.nullcontext()
+    caster = torch.amp.autocast(enabled=torch.cuda.is_available(), device_type=device.type)
+    amp_ctx = torch.amp.autocast(enabled=False, device_type=device.type) if torch.cuda.is_available() else contextlib.nullcontext()
     scaler = torch.amp.GradScaler(enabled=torch.cuda.is_available())
 else:
     amp = torch.cuda.amp if torch.cuda.is_available() else torch.cpu.amp
-    caster = torch.autocast(enabled=torch.cuda.is_available(), device_type=device_type)
-    amp_ctx = torch.autocast(enabled=False, device_type=device_type) if torch.cuda.is_available() else contextlib.nullcontext()
+    caster = torch.autocast(enabled=torch.cuda.is_available(), device_type=device.type)
+    amp_ctx = torch.autocast(enabled=False, device_type=device.type) if torch.cuda.is_available() else contextlib.nullcontext()
     scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
 # torch.set_default_dtype(torch.float32)
 
@@ -40,6 +47,7 @@ def fix_random_seeds(seed=69):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
