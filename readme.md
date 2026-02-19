@@ -1,3 +1,5 @@
+# This branch is dead!
+
 # Usage:
 Very simple torch module. Import it as ``from Tournaments import Tournament``.
 To use, define the number of outputs (classes) during initialization.
@@ -16,3 +18,4 @@ I have included this loss in ``Tournament.py`` as well, so you can import it wit
 Note that the inputs to the tournament should be between 0 and 1, and how you do that is up to you. I would recommend ``batch norm``$\rightarrow$``sigmoid``$\rightarrow$``tournament``$\rightarrow$``softmax``$\rightarrow$``sce`` for training and  ``batch norm``$\rightarrow$``sigmoid``$\rightarrow$``tournament`` for inference.
 
 Good luck, please cite me, I will update the arxiv link soon <3!
+
