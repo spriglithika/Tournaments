@@ -84,6 +84,10 @@ class PLWrapper(pl.LightningModule if pl is not None else object):
             self._val_step_outputs = [{'confs': confs.detach().cpu(), 'preds': pred_labels.detach().cpu(), 'labels': y.detach().cpu()}]
 
         return {'val_loss': loss, 'val_acc': acc}
+
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        print(f"Finished training batch {batch_idx}, loss: {outputs['loss'].item():.4f}")
+
     def on_validation_start(self):
         # clear buffer at start of validation epoch
         self._val_step_outputs = []
@@ -116,7 +120,7 @@ class PLWrapper(pl.LightningModule if pl is not None else object):
                 return
         else:
             try:
-                ece, per_bin_acc, per_bin_conf, counts = eval_ece(self.model, val_loader, self.cfg.get('val.n_bins', 20))
+                ece, per_bin_acc, per_bin_conf, counts = eval_ece(self.model, val_loader, self.cfg.get('val.n_bins', 20), use_tqdm=False)
                 self.log('val/ece', ece, on_epoch=True, prog_bar=True)
             except Exception:
                 # fallback to buffered aggregation

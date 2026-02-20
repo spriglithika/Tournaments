@@ -132,7 +132,10 @@ def eval(model: nn.Module, device: str, test_loader: torch.utils.data.DataLoader
             pbar.set_postfix({'Loss': f'{ema_loss:.4f}', 'Accuracy': f'{100. * conf_mat.trace().item() / conf_mat.sum().item():.2f}%'})
     return ema_loss, 100. * conf_mat.trace().item() / conf_mat.sum().item(), conf_mat
 
-def get_confidence_predictions(model: nn.Module, test_loader: torch.utils.data.DataLoader):
+def get_confidence_predictions(model: nn.Module, test_loader: torch.utils.data.DataLoader, use_tqdm: bool = True):
+    """Return (confs, preds, labels). If `use_tqdm` is False the function
+    iterates silently (useful when Lightning already renders a compact bar).
+    """
     all_confs = []
     all_preds = []
     all_labels = []
@@ -140,8 +143,8 @@ def get_confidence_predictions(model: nn.Module, test_loader: torch.utils.data.D
 
     model.eval()
     with torch.no_grad():
-        pbar = tqdm(test_loader, desc="Evaluating for ECE")
-        for x, y in pbar:
+        iterator = tqdm(test_loader, desc="Evaluating for ECE") if use_tqdm else test_loader
+        for x, y in iterator:
             x, y = x.to(device), y.to(device)
             _, z = model.forward(x)          # your z output
             probs = torch.softmax(z, dim=1)
@@ -154,7 +157,6 @@ def get_confidence_predictions(model: nn.Module, test_loader: torch.utils.data.D
     all_preds = torch.cat(all_preds)
     all_labels = torch.cat(all_labels)
     return all_confs, all_preds, all_labels
-
 
 def compute_ece(confs, preds, labels, n_bins=15):
     bins = torch.linspace(0, 1, n_bins + 1)
@@ -245,8 +247,8 @@ def compute_ece_quantile(confs, preds, labels, n_bins=15):
 
     return ece.item(), per_bin_acc, per_bin_conf, bin_counts
 
-def eval_ece(model: nn.Module, test_loader: torch.utils.data.DataLoader, n_bins=15):
-    confs, preds, labels = get_confidence_predictions(model, test_loader)
+def eval_ece(model: nn.Module, test_loader: torch.utils.data.DataLoader, n_bins=15, use_tqdm: bool = True):
+    confs, preds, labels = get_confidence_predictions(model, test_loader, use_tqdm=use_tqdm)
     # return compute_ece(confs, preds, labels, n_bins)
     return compute_ece_quantile(confs, preds, labels, n_bins)
 
@@ -293,12 +295,12 @@ def ddn_extended_base_eval(model: nn.Module, class_matrix: torch.Tensor, device:
 def laplace_diffuse(pred, C, tau=0.2):
     return pred - tau * (pred @ C.T)
 
-def ddn_extended_eval_ece(model: nn.Module, class_matrix: torch.Tensor, test_loader: torch.utils.data.DataLoader, n_bins=15):
-    confs, preds, labels = ddn_extended_get_confidence_predictions(model, class_matrix, test_loader)
+def ddn_extended_eval_ece(model: nn.Module, class_matrix: torch.Tensor, test_loader: torch.utils.data.DataLoader, n_bins=15, use_tqdm: bool = True):
+    confs, preds, labels = ddn_extended_get_confidence_predictions(model, class_matrix, test_loader, use_tqdm=use_tqdm)
     # return compute_ece(confs, preds, labels, n_bins)
     return compute_ece_quantile(confs, preds, labels, n_bins)
 
-def ddn_extended_get_confidence_predictions(model: nn.Module, class_matrix: torch.Tensor, test_loader: torch.utils.data.DataLoader):
+def ddn_extended_get_confidence_predictions(model: nn.Module, class_matrix: torch.Tensor, test_loader: torch.utils.data.DataLoader, use_tqdm: bool = True):
     all_confs = []
     all_preds = []
     all_labels = []
@@ -306,8 +308,8 @@ def ddn_extended_get_confidence_predictions(model: nn.Module, class_matrix: torc
 
     model.eval()
     with torch.no_grad():
-        pbar = tqdm(test_loader, desc="Evaluating for ECE")
-        for x, y in pbar:
+        iterator = tqdm(test_loader, desc="Evaluating for ECE") if use_tqdm else test_loader
+        for x, y in iterator:
             x, y = x.to(device), y.to(device)
             _, z = model.forward(x)          # your z output
             z = laplace_diffuse(z, class_matrix)
